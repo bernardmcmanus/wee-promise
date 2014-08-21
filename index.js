@@ -84,7 +84,7 @@
     };
 
 
-    Promise.All = function( arr ) {
+    Promise.all = function( arr ) {
         return new Promise(function( resolve , reject ) {
             forEach( arr , function( promise ) {
                 promise.always(
@@ -95,7 +95,7 @@
     };
 
 
-    Promise.Race = function( arr ) {
+    Promise.race = function( arr ) {
         return new Promise(function( resolve , reject ) {
             forEach( arr , function( promise ) {
                 promise.always(
