@@ -4,7 +4,7 @@
         module.exports = Promise;
     }
     else {
-        window.Promise = Promise;
+        window.Promise = window.Promise || Promise;
     }
 
 }(function( Object , setTimeout ) {
