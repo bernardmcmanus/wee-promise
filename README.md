@@ -1,4 +1,4 @@
-PromiseLite
+wee-promise
 ===========
 
-An ultra light (~0.5k minified / gzipped) Promises polyfill.
+an ultra light (~0.5k minified / gzipped) promises polyfill.
