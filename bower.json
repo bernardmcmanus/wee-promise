@@ -1,0 +1,22 @@
+{
+    "name": "wee-promise",
+    "version": "0.1.0",
+    "homepage": "https://github.com/elnarddogg/wee-promise",
+    "authors": [
+        "Bernard McManus"
+    ],
+    "description": "an ultra light promises polyfill",
+    "main": "wee-promise-0.1.0.min.js",
+    "keywords": [
+        "promise",
+        "polyfill",
+        "light"
+    ],
+    "license": "MIT",
+    "ignore": [
+        "**/.*",
+        "node_modules",
+        "bower_components",
+        "tests"
+    ]
+}
