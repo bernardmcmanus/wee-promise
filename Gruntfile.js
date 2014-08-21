@@ -98,8 +98,8 @@ module.exports = function( grunt ) {
     grunt.registerTask( 'always' , [
         'jshint',
         'clean',
-        //'git-describe',
-        //'createHash',
+        'git-describe',
+        'createHash',
         'replace'
     ]);
 
