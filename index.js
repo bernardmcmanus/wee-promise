@@ -53,7 +53,13 @@
         var i = 0;
 
         while (i < len && length( handlers ) > 0) {
-            (remove ? handlers.shift() : handlers[i]).apply( null , args );
+            try {
+                ( remove ? handlers.shift() : handlers[i] ).apply( null , args );
+            }
+            catch( err ) {
+                that._execHandler( _CATCH , [ err ] , true );
+                break;
+            }
             i++;
         }
 
