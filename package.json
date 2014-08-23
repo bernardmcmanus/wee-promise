@@ -1,8 +1,8 @@
 {
     "name": "wee-promise",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "an ultra light promises polyfill",
-    "main": "wee-promise-0.1.1.min.js",
+    "main": "wee-promise-0.1.2.min.js",
     "scripts": {
         "test": "mocha"
     },

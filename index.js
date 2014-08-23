@@ -12,9 +12,20 @@
 
     var PROTOTYPE = 'prototype';
     var STATE = 'state';
-    var _ALWAYS = '_always';
-    var _THEN = '_then';
-    var _CATCH = '_catch';
+    var ARGS = 'args';
+    var ALWAYS = 'always';
+    var THEN = 'then';
+    var CATCH = 'catch';
+    var _ALWAYS = '_' + ALWAYS;
+    var _THEN = '_' + THEN;
+    var _CATCH = '_' + CATCH;
+    var _ADD_HANDLER = '_addHandler';
+    var _EXEC_HANDLER = '_execHandler';
+    var _CLEAR = '_clear';
+
+    var STATEMAP = {};
+    STATEMAP[_CATCH] = -1;
+    STATEMAP[_THEN] = 1;
 
 
     function Promise( func ) {
@@ -22,67 +33,73 @@
         var that = this;
 
         DefineProperty( that , STATE , 0 );
+        DefineProperty( that , ARGS , [] );
         DefineProperty( that , _ALWAYS , [] );
         DefineProperty( that , _THEN , [] );
         DefineProperty( that , _CATCH , [] );
 
         setTimeout(function() {
             func(
-                getPromiseArg( that , 1 , _THEN ),
-                getPromiseArg( that , -1 , _CATCH )
+                getPromiseArg( that , _THEN ),
+                getPromiseArg( that , _CATCH )
             );
         }, 0);
     }
 
 
-    Promise[PROTOTYPE] = {};
-
-
-    Promise[PROTOTYPE]._addHandler = function( type , func ) {
+    Promise[ PROTOTYPE ][ _ADD_HANDLER ] = function( type , func ) {
         var that = this;
-        that[type].push( func );
+        if (func) {
+            that[type].push( func );
+        }
         return that;
     };
 
 
-    Promise[PROTOTYPE]._execHandler = function( type , args , remove ) {
+    Promise[ PROTOTYPE ][ _EXEC_HANDLER ] = function( type , args ) {
+
+        args = [ args ];
 
         var that = this;
         var handlers = that[type];
         var len = length( handlers );
         var i = 0;
 
-        while (i < len && length( handlers ) > 0) {
-            try {
-                ( remove ? handlers.shift() : handlers[i] ).apply( null , args );
+        try {
+            while (i < len && length( handlers ) > 0) {
+                ( STATEMAP[type] ? handlers.shift() : handlers[i] ).apply( null , args );
+                i++;
             }
-            catch( err ) {
-                that._execHandler( _CATCH , [ err ] , true );
-                break;
-            }
-            i++;
         }
+        catch ( err ) {
+            that[ _EXEC_HANDLER ]( _CATCH , err , true );
+        }
+
+        that[ARGS] = args;
+        that[STATE] = STATEMAP[type] || that[STATE];
 
         return that;
     };
 
 
-    Promise[PROTOTYPE].always = function( func ) {
-        return this._addHandler( _ALWAYS , func );
+    Promise[ PROTOTYPE ][ ALWAYS ] = function( func ) {
+        return this[ _ADD_HANDLER ]( _ALWAYS , func );
     };
 
 
-    Promise[PROTOTYPE].then = function( func ) {
-        return this._addHandler( _THEN , func );
+    Promise[ PROTOTYPE ][ THEN ] = function( onresolve , onreject ) {
+        return this
+            [ _ADD_HANDLER ]( _THEN , onresolve )
+            [CATCH]( onreject );
     };
 
 
-    Promise[PROTOTYPE].catch = function( func ) {
-        return this._addHandler( _CATCH , func );
+    Promise[ PROTOTYPE ][ CATCH ] = function( func ) {
+        return this[ _ADD_HANDLER ]( _CATCH , func );
     };
 
 
-    Promise[PROTOTYPE]._clear = function() {
+    Promise[ PROTOTYPE ][ _CLEAR ] = function() {
         var that = this;
         that[_THEN] = [];
         that[_CATCH] = [];
@@ -93,7 +110,7 @@
     Promise.all = function( arr ) {
         return new Promise(function( resolve , reject ) {
             forEach( arr , function( promise ) {
-                promise.always(
+                promise[ ALWAYS ](
                     checkArray( arr , resolve , reject , length( arr ))
                 );
             });
@@ -104,65 +121,58 @@
     Promise.race = function( arr ) {
         return new Promise(function( resolve , reject ) {
             forEach( arr , function( promise ) {
-                promise.always(
-                    checkArray( arr , resolve , reject , 1 )
+                promise[ ALWAYS ](
+                    checkArray( arr , resolve , reject , 1 , true )
                 );
             });
         });
     };
 
 
-    function getPromiseArg( context , state , handlerType ) {
+    function getPromiseArg( context , type ) {
 
-        return function() {
+        return function( args ) {
+
             if (context[STATE]) {
                 return;
             }
-            var args = arguments;
-            context[STATE] = state;
+
             context
-            ._execHandler( handlerType , args , true )
-            ._execHandler( _ALWAYS , args )
-            ._clear();
+            [ _EXEC_HANDLER ]( type , args )
+            [ _EXEC_HANDLER ]( _ALWAYS , args )
+            [_CLEAR]();
         };
     }
 
 
-    function checkArray( arr , resolve , reject , resolveIf ) {
+    function checkArray( arr , resolve , reject , test , single ) {
 
         return function() {
-                        
-            var isResolve = filterTest( arr , 1 , function( len ) {
-                return len === resolveIf;
-            });
+            
+            var resolved = filter( arr , 1 );
+            var rejected = filter( arr , -1 );
 
-            var isReject = filterTest( arr , -1 , function( len ) {
-                return len > 0;
-            });
+            if (length( resolved ) === test) {
 
-            if (isResolve) {
-                resolve();
-            }
-            else if (isReject) {
-                reject();
-            }
-
-            if (isResolve || isReject) {
-                forEach( arr , function( promise ) {
-                    promise._clear();
+                var args = resolved.map(function( promise ) {
+                    return promise[ARGS][0];
                 });
+                
+                resolve( single ? args[0] : args );
+            }
+            else if (length( rejected ) > 0) {
+                reject(
+                    rejected[0][ARGS][0]
+                );
             }
         };
     }
 
-    function filterTest( arr , testState , testLength ) {
-        return testLength(
-            length(
-                arr.filter(function( promise ) {
-                    return promise[STATE] === testState;
-                })
-            )
-        );
+
+    function filter( arr , testState ) {
+        return arr.filter(function( promise ) {
+            return promise[STATE] === testState;
+        });
     }
 
 
