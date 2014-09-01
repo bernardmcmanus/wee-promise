@@ -19,6 +19,82 @@
         var name = args[1];
 
 
+        /*describe( name , function() {
+
+            describe( '#all()' , function() {
+                describe( '#then()' , function() {
+                    it( 'should be executed once all promises are resolved (synchronous)' , function( done ) {
+
+                        var count = 5;
+                        var promises = [];
+
+                        for (var i = 0; i < count; i++) {
+                            promises.push(
+                                (function( i ) {
+                                    return new Promise(function( resolve , reject ) {
+                                        resolve( i );
+                                    });
+                                }( i ))
+                            );
+                        }
+
+                        Promise.all( promises ).then(function( result ) {
+                            console.log(arguments);
+                            done();
+                        });
+
+                        Promise.all( promises ).catch(function( err ) {
+                            console.log(arguments);
+                        });
+                    });
+                });
+            });
+
+            describe( '#race()' , function() {
+                describe( '#then()' , function() {
+                    it( 'should be executed once the first promise is resolved (asynchronous)' , function( done ) {
+                        var count = 5;
+                        var target = [ 2 , 3 ];
+                        var promises = [];
+
+                        for (var i = 0; i < count; i++) {
+                            promises.push(
+                                (function( i ) {
+                                    return new Promise(function( resolve , reject ) {
+                                        resolve( i );
+                                    });
+                                }( i ))
+                            );
+                        }
+
+                        Promise.race( promises ).then(function( result ) {
+                            console.log(arguments);
+                            done();
+                        });
+
+                        Promise.all( promises ).catch(function( err ) {
+                            console.log(arguments);
+                        });
+                    });
+                });
+                describe( '#then()' , function() {
+                    it( 'should receive arguments from the first promise that was resolved (synchronous)' , function( done ) {
+                        race_then( Promise , true , function( result , test ) {
+                            try {
+                                expect( result ).to.equal( test );
+                                done();
+                            }
+                            catch ( err ) {
+                                done( err );
+                            }
+                        });
+                    });
+                });
+            });
+        });
+        return;*/
+
+
         describe( name , function() {
 
             describe( '#then()' , function() {
@@ -142,15 +218,35 @@
 
             describe( '#all()' , function() {
                 describe( '#then()' , function() {
-                    it( 'should be executed once all promises are resolved' , function( done ) {
-                        all_then( Promise , function( result ) {
+                    it( 'should be executed once all promises are resolved (asynchronous)' , function( done ) {
+                        all_then( Promise , false , function( result ) {
                             done();
                         });
                     });
                 });
                 describe( '#then()' , function() {
-                    it( 'should receive a result array equal to the length of the promises array' , function( done ) {
-                        all_then( Promise , function( result , test ) {
+                    it( 'should be executed once all promises are resolved (synchronous)' , function( done ) {
+                        all_then( Promise , true , function( result ) {
+                            done();
+                        });
+                    });
+                });
+                describe( '#then()' , function() {
+                    it( 'should receive a result array equal to the length of the promises array (asynchronous)' , function( done ) {
+                        all_then( Promise , false , function( result , test ) {
+                            try {
+                                expect( result.length ).to.equal( test );
+                                done();
+                            }
+                            catch ( err ) {
+                                done( err );
+                            }
+                        });
+                    });
+                });
+                describe( '#then()' , function() {
+                    it( 'should receive a result array equal to the length of the promises array (synchronous)' , function( done ) {
+                        all_then( Promise , true , function( result , test ) {
                             try {
                                 expect( result.length ).to.equal( test );
                                 done();
@@ -162,15 +258,35 @@
                     });
                 });
                 describe( '#catch()' , function() {
-                    it( 'should be executed if a promise is rejected' , function( done ) {
-                        all_catch( Promise , function( result ) {
+                    it( 'should be executed if a promise is rejected (asynchronous)' , function( done ) {
+                        all_catch( Promise , false , function( result ) {
                             done();
                         });
                     });
                 });
                 describe( '#catch()' , function() {
-                    it( 'should receive arguments from the first promise that was rejected' , function( done ) {
-                        all_catch( Promise , function( result , test ) {
+                    it( 'should be executed if a promise is rejected (synchronous)' , function( done ) {
+                        all_catch( Promise , true , function( result ) {
+                            done();
+                        });
+                    });
+                });
+                describe( '#catch()' , function() {
+                    it( 'should receive arguments from the first promise that was rejected (asynchronous)' , function( done ) {
+                        all_catch( Promise , false , function( result , test ) {
+                            try {
+                                expect( result ).to.equal( test );
+                                done();
+                            }
+                            catch ( err ) {
+                                done( err );
+                            }
+                        });
+                    });
+                });
+                describe( '#catch()' , function() {
+                    it( 'should receive arguments from the first promise that was rejected (synchronous)' , function( done ) {
+                        all_catch( Promise , true , function( result , test ) {
                             try {
                                 expect( result ).to.equal( test );
                                 done();
@@ -185,15 +301,35 @@
 
             describe( '#race()' , function() {
                 describe( '#then()' , function() {
-                    it( 'should be executed once the first promise is resolved' , function( done ) {
-                        race_then( Promise , function( result ) {
+                    it( 'should be executed once the first promise is resolved (asynchronous)' , function( done ) {
+                        race_then( Promise , false , function( result ) {
                             done();
                         });
                     });
                 });
                 describe( '#then()' , function() {
-                    it( 'should receive arguments from the first promise that was resolved' , function( done ) {
-                        race_then( Promise , function( result , test ) {
+                    it( 'should be executed once the first promise is resolved (synchronous)' , function( done ) {
+                        race_then( Promise , true , function( result ) {
+                            done();
+                        });
+                    });
+                });
+                describe( '#then()' , function() {
+                    it( 'should receive arguments from the first promise that was resolved (asynchronous)' , function( done ) {
+                        race_then( Promise , false , function( result , test ) {
+                            try {
+                                expect( result ).to.equal( test );
+                                done();
+                            }
+                            catch ( err ) {
+                                done( err );
+                            }
+                        });
+                    });
+                });
+                describe( '#then()' , function() {
+                    it( 'should receive arguments from the first promise that was resolved (synchronous)' , function( done ) {
+                        race_then( Promise , true , function( result , test ) {
                             try {
                                 expect( result ).to.equal( test );
                                 done();
@@ -209,7 +345,7 @@
     });
 
     
-    function all_then( Promise , callback ) {
+    function all_then( Promise , sync , callback ) {
 
         var count = 5;
         var promises = [];
@@ -218,9 +354,14 @@
             promises.push(
                 (function( i ) {
                     return new Promise(function( resolve , reject ) {
-                        setTimeout(function() {
+                        if (sync) {
                             resolve( i );
-                        }, 1 );
+                        }
+                        else {
+                            setTimeout(function() {
+                                resolve( i );
+                            }, 1 );
+                        }
                     });
                 }( i ))
             );
@@ -232,25 +373,34 @@
     }
 
 
-    function all_catch( Promise , callback ) {
+    function all_catch( Promise , sync , callback ) {
 
         var count = 5;
         var target = [ 2 , 3 ];
         var promises = [];
         var arr = [];
 
+        function determine( i , resolve , reject ) {
+            if (target.indexOf( i ) >= 0) {
+                reject( i );
+            }
+            else {
+                resolve( i );
+            }
+        }
+
         for (var i = 0; i < count; i++) {
             promises.push(
                 (function( i ) {
                     return new Promise(function( resolve , reject ) {
-                        setTimeout(function() {
-                            if (target.indexOf( i ) >= 0) {
-                                reject( i );
-                            }
-                            else {
-                                resolve( i );
-                            }
-                        }, 1 );
+                        if (sync) {
+                            determine( i , resolve , reject );
+                        }
+                        else {
+                            setTimeout(function() {
+                                determine( i , resolve , reject );
+                            }, 1 );
+                        }
                     });
                 }( i ))
             );
@@ -262,27 +412,33 @@
     }
 
 
-    function race_then( Promise , callback ) {
+    function race_then( Promise , sync , callback ) {
 
         var count = 5;
         var target = [ 2 , 3 ];
+        var test = sync ? 0 : target[0];
         var promises = [];
 
         for (var i = 0; i < count; i++) {
             promises.push(
                 (function( i ) {
                     return new Promise(function( resolve , reject ) {
-                        var t = (target.indexOf( i ) >= 0 ? 1 : count);
-                        setTimeout(function() {
+                        if (sync) {
                             resolve( i );
-                        }, t );
+                        }
+                        else {
+                            var t = (target.indexOf( i ) >= 0 ? 1 : count);
+                            setTimeout(function() {
+                                resolve( i );
+                            }, t );
+                        }
                     });
                 }( i ))
             );
         }
 
         Promise.race( promises ).then(function( result ) {
-            callback( result , target[0] );
+            callback( result , test );
         });
     }
 

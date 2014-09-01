@@ -13,6 +13,8 @@
     var PROTOTYPE = 'prototype';
     var STATE = 'state';
     var ARGS = 'args';
+    var RESOLVE = 'resolve';
+    var REJECT = 'reject';
     var ALWAYS = 'always';
     var THEN = 'then';
     var CATCH = 'catch';
@@ -38,12 +40,12 @@
         DefineProperty( that , _THEN , [] );
         DefineProperty( that , _CATCH , [] );
 
-        setTimeout(function() {
-            func(
-                getPromiseArg( that , _THEN ),
-                getPromiseArg( that , _CATCH )
-            );
-        }, 0);
+        that[RESOLVE] = getPromiseArg( that , _THEN );
+        that[REJECT] = getPromiseArg( that , _CATCH );
+
+        async(function() {
+            func( that[RESOLVE] , that[REJECT] );
+        });
     }
 
 
@@ -72,7 +74,7 @@
             }
         }
         catch ( err ) {
-            that[ _EXEC_HANDLER ]( _CATCH , err , true );
+            that[ _EXEC_HANDLER ]( _CATCH , err );
         }
 
         that[ARGS] = args;
@@ -133,14 +135,17 @@
 
         return function( args ) {
 
-            if (context[STATE]) {
-                return;
-            }
+            async(function() {
 
-            context
-            [ _EXEC_HANDLER ]( type , args )
-            [ _EXEC_HANDLER ]( _ALWAYS , args )
-            [_CLEAR]();
+                if (context[STATE]) {
+                    return;
+                }
+
+                context
+                [ _EXEC_HANDLER ]( type , args )
+                [ _EXEC_HANDLER ]( _ALWAYS , args )
+                [_CLEAR]();
+            });
         };
     }
 
@@ -181,6 +186,11 @@
             value: value,
             writable: true
         });
+    }
+
+
+    function async( callback ) {
+        setTimeout( callback , 1 );
     }
 
 
