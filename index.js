@@ -21,9 +21,9 @@
     var _ALWAYS = '_' + ALWAYS;
     var _THEN = '_' + THEN;
     var _CATCH = '_' + CATCH;
-    var _ADD_HANDLER = '_addHandler';
-    var _EXEC_HANDLER = '_execHandler';
-    var _CLEAR = '_clear';
+    var _ADD = '_add';
+    var _EXEC = '_exec';
+    var _READY = '_ready';
 
     var STATEMAP = {};
     STATEMAP[_CATCH] = -1;
@@ -40,16 +40,20 @@
         DefineProperty( that , _THEN , [] );
         DefineProperty( that , _CATCH , [] );
 
+        that[_READY] = false;
         that[RESOLVE] = getPromiseArg( that , _THEN );
         that[REJECT] = getPromiseArg( that , _CATCH );
 
         async(function() {
-            func( that[RESOLVE] , that[REJECT] );
+            trycatch( that , function() {
+                func( that[RESOLVE] , that[REJECT] );
+            });
+            that[_READY] = true;
         });
     }
 
 
-    Promise[ PROTOTYPE ][ _ADD_HANDLER ] = function( type , func ) {
+    Promise[ PROTOTYPE ][ _ADD ] = function( type , func ) {
         var that = this;
         if (func) {
             that[type].push( func );
@@ -58,7 +62,7 @@
     };
 
 
-    Promise[ PROTOTYPE ][ _EXEC_HANDLER ] = function( type , args ) {
+    Promise[ PROTOTYPE ][ _EXEC ] = function( type , args ) {
 
         args = [ args ];
 
@@ -67,15 +71,12 @@
         var len = length( handlers );
         var i = 0;
 
-        try {
+        trycatch( that , function() {
             while (i < len && length( handlers ) > 0) {
                 ( STATEMAP[type] ? handlers.shift() : handlers[i] ).apply( null , args );
                 i++;
             }
-        }
-        catch ( err ) {
-            that[ _EXEC_HANDLER ]( _CATCH , err );
-        }
+        });
 
         that[ARGS] = args;
         that[STATE] = STATEMAP[type] || that[STATE];
@@ -85,27 +86,19 @@
 
 
     Promise[ PROTOTYPE ][ ALWAYS ] = function( func ) {
-        return this[ _ADD_HANDLER ]( _ALWAYS , func );
+        return this[ _ADD ]( _ALWAYS , func );
     };
 
 
     Promise[ PROTOTYPE ][ THEN ] = function( onresolve , onreject ) {
         return this
-            [ _ADD_HANDLER ]( _THEN , onresolve )
+            [ _ADD ]( _THEN , onresolve )
             [CATCH]( onreject );
     };
 
 
     Promise[ PROTOTYPE ][ CATCH ] = function( func ) {
-        return this[ _ADD_HANDLER ]( _CATCH , func );
-    };
-
-
-    Promise[ PROTOTYPE ][ _CLEAR ] = function() {
-        var that = this;
-        that[_THEN] = [];
-        that[_CATCH] = [];
-        that[_ALWAYS] = [];
+        return this[ _ADD ]( _CATCH , func );
     };
 
 
@@ -133,19 +126,31 @@
 
     function getPromiseArg( context , type ) {
 
+        function setState( args ) {
+
+            if (!context[_READY]) {
+
+                async(function() {
+                    setState( args );
+                });
+            }
+            else {
+
+                async(function() {
+
+                    if (context[STATE]) {
+                        return;
+                    }
+
+                    context
+                    [ _EXEC ]( type , args )
+                    [ _EXEC ]( _ALWAYS , args );
+                });
+            }
+        }
+
         return function( args ) {
-
-            async(function() {
-
-                if (context[STATE]) {
-                    return;
-                }
-
-                context
-                [ _EXEC_HANDLER ]( type , args )
-                [ _EXEC_HANDLER ]( _ALWAYS , args )
-                [_CLEAR]();
-            });
+            setState( args );
         };
     }
 
@@ -191,6 +196,16 @@
 
     function async( callback ) {
         setTimeout( callback , 1 );
+    }
+
+
+    function trycatch( context , func ) {
+        try {
+            func();
+        }
+        catch ( err ) {
+            context[ _EXEC ]( _CATCH , err );
+        }
     }
 
 

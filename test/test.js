@@ -21,6 +21,24 @@
 
         describe( name , function() {
 
+            describe( 'Constructor' , function() {
+                it( 'should catch errors thrown in the resolver function' , function( done ) {
+                    new Promise(function( resolve , reject ) {
+                        var a;
+                        a.b = 'c';
+                    })
+                    .catch(function( err ) {
+                        try {
+                            assert.instanceOf( err , Error );
+                            done();
+                        }
+                        catch( _err ) {
+                            done( _err );
+                        }
+                    });
+                });
+            });
+
             describe( '#then()' , function() {
                 it( 'should do nothing when resolve is called twice' , function( done ) {
                     new Promise(function( resolve , reject ) {
