@@ -1,12 +1,12 @@
 {
     "name": "wee-promise",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "homepage": "https://github.com/elnarddogg/wee-promise",
     "authors": [
         "Bernard McManus"
     ],
     "description": "an ultra light promises polyfill",
-    "main": "wee-promise-0.1.4.min.js",
+    "main": "wee-promise-0.1.5.min.js",
     "keywords": [
         "promise",
         "polyfill",

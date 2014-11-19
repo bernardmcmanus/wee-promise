@@ -13,8 +13,6 @@
     var PROTOTYPE = 'prototype';
     var STATE = 'state';
     var ARGS = 'args';
-    var RESOLVE = 'resolve';
-    var REJECT = 'reject';
     var ALWAYS = 'always';
     var THEN = 'then';
     var CATCH = 'catch';
@@ -34,19 +32,18 @@
 
         var that = this;
 
-        DefineProperty( that , STATE , 0 );
-        DefineProperty( that , ARGS , [] );
-        DefineProperty( that , _ALWAYS , [] );
-        DefineProperty( that , _THEN , [] );
-        DefineProperty( that , _CATCH , [] );
-
-        that[_READY] = false;
-        that[RESOLVE] = getPromiseArg( that , _THEN );
-        that[REJECT] = getPromiseArg( that , _CATCH );
+        defineProperty( that , STATE , 0 );
+        defineProperty( that , ARGS , [] );
+        defineProperty( that , _ALWAYS , [] );
+        defineProperty( that , _THEN , [] );
+        defineProperty( that , _CATCH , [] );
 
         async(function() {
             trycatch( that , function() {
-                func( that[RESOLVE] , that[REJECT] );
+                func(
+                    getPromiseArg( that , _THEN ),
+                    getPromiseArg( that , _CATCH )
+                );
             });
             that[_READY] = true;
         });
@@ -72,7 +69,7 @@
         var i = 0;
 
         trycatch( that , function() {
-            while (i < len && length( handlers ) > 0) {
+            while (i < len) {
                 ( STATEMAP[type] ? handlers.shift() : handlers[i] ).apply( null , args );
                 i++;
             }
@@ -127,21 +124,16 @@
     function getPromiseArg( context , type ) {
 
         function setState( args ) {
-
             if (!context[_READY]) {
-
                 async(function() {
                     setState( args );
                 });
             }
             else {
-
                 async(function() {
-
                     if (context[STATE]) {
                         return;
                     }
-
                     context
                     [ _EXEC ]( type , args )
                     [ _EXEC ]( _ALWAYS , args );
@@ -149,9 +141,7 @@
             }
         }
 
-        return function( args ) {
-            setState( args );
-        };
+        return setState;
     }
 
 
@@ -186,7 +176,7 @@
     }
 
 
-    function DefineProperty( context , name , value ) {
+    function defineProperty( context , name , value ) {
         Object.defineProperty( context , name , {
             value: value,
             writable: true
