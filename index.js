@@ -1,21 +1,25 @@
 (function( Promise ) {
 
+  var global = this;
+
   if (typeof exports === 'object') {
     module.exports = Promise;
   }
   else {
-    window.Promise = window.Promise || Promise;
+    global.Promise = global.Promise || Promise;
   }
 
-}(function( Object , setTimeout ) {
+}(function( setTimeout ) {
 
 
+  var UNDEFINED;
   var PROTOTYPE = 'prototype';
   var STATE = 'state';
   var ARGS = 'args';
   var ALWAYS = 'always';
   var THEN = 'then';
   var CATCH = 'catch';
+  var PASS = 'pass';
   var _ALWAYS = '_' + ALWAYS;
   var _THEN = '_' + THEN;
   var _CATCH = '_' + CATCH;
@@ -32,11 +36,12 @@
 
     var that = this;
 
-    defineProperty( that , STATE , 0 );
-    defineProperty( that , ARGS , [] );
-    defineProperty( that , _ALWAYS , [] );
-    defineProperty( that , _THEN , [] );
-    defineProperty( that , _CATCH , [] );
+    // this is implied, but unnecessary to declare explicitly
+    // that[STATE] = 0;
+
+    forEach([ ARGS , _THEN , _CATCH , _ALWAYS ] , function( key ) {
+      that[key] = [];
+    });
 
     async(function() {
       trycatch( that , function() {
@@ -61,24 +66,26 @@
 
   Promise[ PROTOTYPE ][ _EXEC ] = function( type , args ) {
 
-    args = [ args ];
-
     var that = this;
     var handlers = that[type];
     var len = length( handlers );
     var i = 0;
 
-    trycatch( that , function() {
+    return trycatch( that , function() {
+
       while (i < len) {
-        ( STATEMAP[type] ? handlers.shift() : handlers[i] ).apply( null , args );
+        args = ( STATEMAP[type] ? handlers.shift() : handlers[i] ).apply( UNDEFINED , [ args ]);
+        if (isPromise( args )) {
+          return that[ PASS ]( args );
+        }
         i++;
       }
+
+      that[ARGS] = [ args ];
+      that[STATE] = STATEMAP[type] || that[STATE];
+
+      return that;
     });
-
-    that[ARGS] = args;
-    that[STATE] = STATEMAP[type] || that[STATE];
-
-    return that;
   };
 
 
@@ -96,6 +103,15 @@
 
   Promise[ PROTOTYPE ][ CATCH ] = function( func ) {
     return this[ _ADD ]( _CATCH , func );
+  };
+
+
+  Promise[ PROTOTYPE ][ PASS ] = function( promise ) {
+    var that = this;
+    forEach([ _THEN , _CATCH , _ALWAYS ] , function( key ) {
+      promise[key] = that[key];
+    });
+    return promise;
   };
 
 
@@ -176,11 +192,8 @@
   }
 
 
-  function defineProperty( context , name , value ) {
-    Object.defineProperty( context , name , {
-      value: value,
-      writable: true
-    });
+  function isPromise( subject ) {
+    return subject instanceof Promise;
   }
 
 
@@ -191,10 +204,10 @@
 
   function trycatch( context , func ) {
     try {
-      func();
+      return func();
     }
     catch ( err ) {
-      context[ _EXEC ]( _CATCH , err );
+      return context[ _EXEC ]( _CATCH , err );
     }
   }
 
@@ -212,7 +225,7 @@
   return Promise;
 
   
-}( Object , setTimeout )));
+}( setTimeout )));
 
 
 

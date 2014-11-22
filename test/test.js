@@ -1,6 +1,7 @@
 (function() {
 
 
+  var util = require( 'util' );
   var WeePromise = require( '../index.js' );
   var ES6_Promise = require( 'es6-promise' ).Promise;
   var chai = require( 'chai' );
@@ -60,6 +61,149 @@
             async( done );
             throw new Error( 'error' );
           });
+        });
+        it( 'should pass returned args to the next then function' , function( done ) {
+          new Promise(function( resolve ) {
+            async(function() {
+              resolve( 'a' );
+            });
+          })
+          .then(function( val ) {
+            expect( val ).to.equal( 'a' );
+            return val + 'b';
+          })
+          .then(function( val ) {
+            expect( val ).to.equal( 'ab' );
+            return val + 'c';
+          })
+          .then(function( val ) {
+            expect( val ).to.equal( 'abc' );
+            done();
+          })
+          .catch( done );
+        });
+        it( 'should allow for promise chaining (asynchronous)' , function( done ) {
+
+          var start = Date.now();
+          var delay = 100;
+          var tolerance = 50;
+          var i = 0;
+
+          new Promise(function( resolve ) {
+            async( resolve , delay );
+          })
+          .then(function() {
+            i++;
+            expect( Date.now() - start ).to.be.closeTo( i * delay , tolerance );
+            return new Promise(function( resolve ) {
+              async( resolve , delay );
+            });
+          })
+          .then(function() {
+            i++;
+            expect( Date.now() - start ).to.be.closeTo( i * delay , tolerance );
+            return new Promise(function( resolve ) {
+              async( resolve , delay );
+            });
+          })
+          .then(function() {
+            i++;
+            expect( Date.now() - start ).to.be.closeTo( i * delay , tolerance );
+            return 5;
+          })
+          .then(function( val ) {
+            expect( val ).to.equal( 5 );
+            expect( Date.now() - start ).to.be.closeTo( i * delay , tolerance );
+            done();
+          })
+          .catch( done );
+        });
+        it( 'should allow for promise chaining (synchronous)' , function( done ) {
+          new Promise(function( resolve ) {
+            resolve();
+          })
+          .then(function() {
+            return new Promise(function( resolve ) {
+              resolve();
+            });
+          })
+          .then(function() {
+            return new Promise(function( resolve ) {
+              resolve();
+            });
+          })
+          .then(function() {
+            return 5;
+          })
+          .then(function( val ) {
+            expect( val ).to.equal( 5 );
+            done();
+          })
+          .catch( done );
+        });
+        it( 'should pass resolved args along promise chains (asynchronous)' , function( done ) {
+          new Promise(function( resolve ) {
+            async(function() {
+              resolve( 'a' );
+            }, 10);
+          })
+          .then(function( val ) {
+            expect( val ).to.equal( 'a' );
+            return new Promise(function( resolve ) {
+              async(function() {
+                resolve( val + 'b' );
+              }, 10);
+            });
+          })
+          .then(function( val ) {
+            expect( val ).to.equal( 'ab' );
+            return new Promise(function( resolve ) {
+              async(function() {
+                resolve( val + 'c' );
+              }, 10);
+            });
+          })
+          .then(function( val ) {
+            expect( val ).to.equal( 'abc' );
+            return new Promise(function( resolve ) {
+              async(function() {
+                resolve( val + 'd' );
+              }, 10);
+            });
+          })
+          .then(function( val ) {
+            expect( val ).to.equal( 'abcd' );
+            done();
+          })
+          .catch( done );
+        });
+        it( 'should pass resolved args along promise chains (synchronous)' , function( done ) {
+          new Promise(function( resolve ) {
+            resolve( 'a' );
+          })
+          .then(function( val ) {
+            expect( val ).to.equal( 'a' );
+            return new Promise(function( resolve ) {
+              resolve( val + 'b' );
+            });
+          })
+          .then(function( val ) {
+            expect( val ).to.equal( 'ab' );
+            return new Promise(function( resolve ) {
+              resolve( val + 'c' );
+            });
+          })
+          .then(function( val ) {
+            expect( val ).to.equal( 'abc' );
+            return new Promise(function( resolve ) {
+              resolve( val + 'd' );
+            });
+          })
+          .then(function( val ) {
+            expect( val ).to.equal( 'abcd' );
+            done();
+          })
+          .catch( done );
         });
       });
 
@@ -253,6 +397,15 @@
       });
     });
   });
+
+
+  function log() {
+    var args = Array.prototype.slice.call( arguments , 0 );
+    args = args.map(function( arg ) {
+      return util.inspect.apply( util , [ arg , { colors: true, depth: 3 }]);
+    });
+    console.log.apply( console , args );
+  }
 
   
   function all_then( Promise , sync , callback ) {

@@ -1,7 +1,7 @@
 module.exports = function( grunt ) {
 
 
-  var Script = [
+  var Build = [
     'index.js'
   ];
 
@@ -14,11 +14,11 @@ module.exports = function( grunt ) {
       'options': {
         prop: 'git-version'
       },
-      dist : {}
+      dist: {}
     },
 
-    jshint : {
-      all : ([ 'Gruntfile.js' ]).concat( Script )
+    jshint: {
+      all: [ 'index.js' ]
     },
 
     clean: {
@@ -29,11 +29,11 @@ module.exports = function( grunt ) {
       options: {
         patterns: [
           {
-            match: /(\"version\")(.*?)(\")(.{1,}?)(\")/i,
+            match: /\"version\".*?\".*\"/i,
             replacement: '\"version\": \"<%= pkg.version %>\"'
           },
           {
-            match: /(\"main\")(.*?)(\")(.{1,}?)(\")/i,
+            match: /\"main\".*?\".*\"/i,
             replacement: '\"main\": \"<%= pkg.name %>-<%= pkg.version %>.min.js\"'
           }
         ]
@@ -52,11 +52,11 @@ module.exports = function( grunt ) {
 
     uglify: {
       options: {
-        banner : '/*! <%= pkg.name %> - <%= pkg.version %> - <%= pkg.author.name %> - <%= grunt.config.get( \'git-hash\' ) %> - <%= grunt.template.today("yyyy-mm-dd") %> */\n'
+        banner: '/*! <%= pkg.name %> - <%= pkg.version %> - <%= pkg.author.name %> - <%= grunt.config.get( \'git-hash\' ) %> - <%= grunt.template.today("yyyy-mm-dd") %> */\n'
       },
-      release : {
-        files : {
-          '<%= pkg.name %>-<%= pkg.version %>.min.js' : Script
+      release: {
+        files: {
+          '<%= pkg.name %>-<%= pkg.version %>.min.js': Build
         }
       }
     }
