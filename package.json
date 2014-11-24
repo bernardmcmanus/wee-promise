@@ -4,7 +4,7 @@
   "description": "an ultra light promises polyfill",
   "main": "wee-promise-0.2.0.min.js",
   "scripts": {
-    "test": "mocha"
+    "test": "clear; mocha"
   },
   "devDependencies": {
     "mocha": "1.21.4",

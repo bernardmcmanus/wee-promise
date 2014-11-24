@@ -145,22 +145,18 @@
           new Promise(function( resolve ) {
             async(function() {
               resolve( 'a' );
-            }, 10);
+            });
           })
           .then(function( val ) {
             expect( val ).to.equal( 'a' );
-            return new Promise(function( resolve ) {
-              async(function() {
-                resolve( val + 'b' );
-              }, 10);
-            });
+            return val + 'b';
           })
           .then(function( val ) {
             expect( val ).to.equal( 'ab' );
             return new Promise(function( resolve ) {
               async(function() {
                 resolve( val + 'c' );
-              }, 10);
+              });
             });
           })
           .then(function( val ) {
@@ -168,7 +164,7 @@
             return new Promise(function( resolve ) {
               async(function() {
                 resolve( val + 'd' );
-              }, 10);
+              });
             });
           })
           .then(function( val ) {
@@ -183,9 +179,7 @@
           })
           .then(function( val ) {
             expect( val ).to.equal( 'a' );
-            return new Promise(function( resolve ) {
-              resolve( val + 'b' );
-            });
+            return val + 'b';
           })
           .then(function( val ) {
             expect( val ).to.equal( 'ab' );
@@ -291,34 +285,198 @@
           it( 'should be executed once all promises are resolved (asynchronous)' , function( done ) {
             all_then( Promise , false , function( result ) {
               done();
-            });
+            })
+            .catch( done );
           });
           it( 'should be executed once all promises are resolved (synchronous)' , function( done ) {
             all_then( Promise , true , function( result ) {
               done();
-            });
+            })
+            .catch( done );
           });
-          it( 'should receive a result array equal to the length of the promises array (asynchronous)' , function( done ) {
+          it( 'should receive a result array equal to the array of resolved promises (asynchronous)' , function( done ) {
             all_then( Promise , false , function( result , test ) {
-              try {
-                expect( result.length ).to.equal( test );
-                done();
-              }
-              catch ( err ) {
-                done( err );
-              }
-            });
+              expect( result.length ).to.equal( test.length );
+              expect( result ).to.eql( test );
+              done();
+            })
+            .catch( done );
           });
-          it( 'should receive a result array equal to the length of the promises array (synchronous)' , function( done ) {
+          it( 'should receive a result array equal to the array of resolved promises (synchronous)' , function( done ) {
             all_then( Promise , true , function( result , test ) {
-              try {
-                expect( result.length ).to.equal( test );
-                done();
-              }
-              catch ( err ) {
-                done( err );
-              }
+              expect( result.length ).to.equal( test.length );
+              expect( result ).to.eql( test );
+              done();
+            })
+            .catch( done );
+          });
+          it( 'should pass returned args to the next then function' , function( done ) {
+
+            var promises = [ 0 , 1 , 2 ].map(function( i ) {
+              return new Promise(function( resolve ) {
+                resolve( i + '-a' );
+              })
+              .then(function( val ) {
+                expect( val ).to.equal( i + '-a' );
+                return val + 'b';
+              })
+              .then(function( val ) {
+                expect( val ).to.equal( i + '-ab' );
+                return val + 'c';
+              })
+              .then(function( val ) {
+                expect( val ).to.equal( i + '-abc' );
+                return val;
+              })
+              .catch( done );
             });
+
+            Promise.all( promises ).then(function( result ) {
+              result.forEach(function( arg , i ) {
+                expect( arg ).to.equal( i + '-abc' );
+              });
+              done();
+            })
+            .catch( done );
+          });
+          it( 'should allow for promise chaining (asynchronous)' , function( done ) {
+
+            var promises = [ 0 , 1 , 2 ].map(function( i ) {
+
+              var start = Date.now();
+              var delay = 100;
+              var tolerance = 50;
+              var j = 0;
+
+              return new Promise(function( resolve ) {
+                async( resolve , delay );
+              })
+              .then(function() {
+                j++;
+                expect( Date.now() - start ).to.be.closeTo( j * delay , tolerance );
+                return new Promise(function( resolve ) {
+                  async( resolve , delay );
+                });
+              })
+              .then(function() {
+                j++;
+                expect( Date.now() - start ).to.be.closeTo( j * delay , tolerance );
+                return new Promise(function( resolve ) {
+                  async( resolve , delay );
+                });
+              })
+              .then(function() {
+                j++;
+                expect( Date.now() - start ).to.be.closeTo( j * delay , tolerance );
+                return 5;
+              })
+              .then(function( val ) {
+                expect( val ).to.equal( 5 );
+                expect( Date.now() - start ).to.be.closeTo( j * delay , tolerance );
+                return val + i;
+              });
+            });
+
+            Promise.all( promises ).then(function( result ) {
+              result.forEach(function( arg , i ) {
+                expect( arg ).to.equal( 5 + i );
+              });
+              done();
+            })
+            .catch( done );
+          });
+          it( 'should allow for promise chaining (synchronous)' , function( done ) {
+
+            var promises = [ 0 , 1 , 2 ].map(function( i ) {
+
+              var start = Date.now();
+              var tolerance = 20;
+
+              return new Promise(function( resolve ) {
+                resolve();
+              })
+              .then(function() {
+                expect( Date.now() - start ).to.be.closeTo( 0 , tolerance );
+                return new Promise(function( resolve ) {
+                  resolve();
+                });
+              })
+              .then(function() {
+                expect( Date.now() - start ).to.be.closeTo( 0 , tolerance );
+                return new Promise(function( resolve ) {
+                  resolve();
+                });
+              })
+              .then(function() {
+                expect( Date.now() - start ).to.be.closeTo( 0 , tolerance );
+                return 5;
+              })
+              .then(function( val ) {
+                expect( val ).to.equal( 5 );
+                expect( Date.now() - start ).to.be.closeTo( 0 , tolerance );
+                return val + i;
+              });
+            });
+
+            Promise.all( promises ).then(function( result ) {
+              result.forEach(function( arg , i ) {
+                expect( arg ).to.equal( 5 + i );
+              });
+              done();
+            })
+            .catch( done );
+          });
+          it( 'should pass resolved args along promise chains (asynchronous)' , function( done ) {
+
+            var promises = [ 0 , 1 , 2 ].map(function( i ) {
+              return new Promise(function( resolve ) {
+                async(function() {
+                  resolve( i + '-a' );
+                });
+              })
+              .then(function( val ) {
+                return val + 'b';
+              })
+              .then(function( val ) {
+                return new Promise(function( resolve ) {
+                  async(function() {
+                    resolve( val + 'c' );
+                  });
+                });
+              });
+            });
+
+            Promise.all( promises ).then(function( result ) {
+              result.forEach(function( arg , i ) {
+                expect( arg ).to.equal( i + '-abc' );
+              });
+              done();
+            })
+            .catch( done );
+          });
+          it( 'should pass resolved args along promise chains (synchronous)' , function( done ) {
+
+            var promises = [ 0 , 1 , 2 ].map(function( i ) {
+              return new Promise(function( resolve ) {
+                resolve( i + '-a' );
+              })
+              .then(function( val ) {
+                return val + 'b';
+              })
+              .then(function( val ) {
+                return new Promise(function( resolve ) {
+                  resolve( val + 'c' );
+                });
+              });
+            });
+
+            Promise.all( promises ).then(function( result ) {
+              result.forEach(function( arg , i ) {
+                expect( arg ).to.equal( i + '-abc' );
+              });
+              done();
+            })
+            .catch( done );
           });
         });
 
@@ -335,25 +493,51 @@
           });
           it( 'should receive arguments from the first promise that was rejected (asynchronous)' , function( done ) {
             all_catch( Promise , false , function( result , test ) {
-              try {
-                expect( result ).to.equal( test );
-                done();
-              }
-              catch ( err ) {
+              expect( result ).to.equal( test );
+              done();
+            })
+            .catch(function( err ) {
+              if (err instanceof Error) {
                 done( err );
               }
             });
           });
           it( 'should receive arguments from the first promise that was rejected (synchronous)' , function( done ) {
             all_catch( Promise , true , function( result , test ) {
-              try {
-                expect( result ).to.equal( test );
-                done();
-              }
-              catch ( err ) {
+              expect( result ).to.equal( test );
+              done();
+            })
+            .catch(function( err ) {
+              if (err instanceof Error) {
                 done( err );
               }
             });
+          });
+          it( 'should handle promise chains' , function( done ) {
+
+            var index = Math.floor( Math.random() * 3 );
+
+            var promises = [ 0 , 1 , 2 ].map(function( i ) {
+              return new Promise(function( resolve ) {
+                async( resolve );
+              })
+              .then(function( val ) {
+                return new Promise(function( resolve , reject ) {
+                  if (i === index) {
+                    throw new Error( i );
+                  }
+                  else {
+                    async( resolve );
+                  }
+                });
+              });
+            });
+
+            Promise.all( promises ).catch(function( err ) {
+              expect( err.message ).to.equal( index.toString() );
+              done();
+            })
+            .catch( done );
           });
         });
       });
@@ -364,34 +548,54 @@
           it( 'should be executed once the first promise is resolved (asynchronous)' , function( done ) {
             race_then( Promise , false , function( result ) {
               done();
-            });
+            })
+            .catch( done );
           });
           it( 'should be executed once the first promise is resolved (synchronous)' , function( done ) {
             race_then( Promise , true , function( result ) {
               done();
-            });
+            })
+            .catch( done );
           });
           it( 'should receive arguments from the first promise that was resolved (asynchronous)' , function( done ) {
             race_then( Promise , false , function( result , test ) {
-              try {
-                expect( result ).to.equal( test );
-                done();
-              }
-              catch ( err ) {
-                done( err );
-              }
-            });
+              expect( result ).to.equal( test );
+              done();
+            })
+            .catch( done );
           });
           it( 'should receive arguments from the first promise that was resolved (synchronous)' , function( done ) {
             race_then( Promise , true , function( result , test ) {
-              try {
-                expect( result ).to.equal( test );
-                done();
-              }
-              catch ( err ) {
-                done( err );
-              }
+              expect( result ).to.equal( test );
+              done();
+            })
+            .catch( done );
+          });
+          it( 'should handle promise chains' , function( done ) {
+
+            var index = Math.floor( Math.random() * 3 );
+            var delay = 50;
+
+            var promises = [ 0 , 1 , 2 ].map(function( i ) {
+              return new Promise(function( resolve ) {
+                async(function() {
+                  resolve( i );
+                });
+              })
+              .then(function( val ) {
+                return new Promise(function( resolve ) {
+                  async(function() {
+                    resolve( i );
+                  } , ( i === index ? 1 : delay ));
+                });
+              });
             });
+
+            Promise.race( promises ).then(function( result ) {
+              expect( result ).to.equal( index );
+              done();
+            })
+            .catch( done );
           });
         });
       });
@@ -410,8 +614,7 @@
   
   function all_then( Promise , sync , callback ) {
 
-    var count = 5;
-    var promises = [];
+    var count = 5, promises = [], test = [];
 
     for (var i = 0; i < count; i++) {
       promises.push(
@@ -428,10 +631,11 @@
           });
         }( i ))
       );
+      test.push( i );
     }
 
-    Promise.all( promises ).then(function( result ) {
-      callback( result , count );
+    return Promise.all( promises ).then(function( result ) {
+      callback( result , test );
     });
   }
 
@@ -469,7 +673,7 @@
       );
     }
 
-    Promise.all( promises ).catch(function( result ) {
+    return Promise.all( promises ).catch(function( result ) {
       callback( result , target[0] );
     });
   }
@@ -500,7 +704,7 @@
       );
     }
 
-    Promise.race( promises ).then(function( result ) {
+    return Promise.race( promises ).then(function( result ) {
       callback( result , test );
     });
   }

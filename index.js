@@ -2,7 +2,7 @@
 
   var global = this;
 
-  if (typeof exports === 'object') {
+  if (typeof exports == 'object') {
     module.exports = Promise;
   }
   else {
@@ -28,18 +28,19 @@
   var _READY = '_ready';
 
   var STATEMAP = {};
-  STATEMAP[_CATCH] = -1;
   STATEMAP[_THEN] = 1;
+  STATEMAP[_CATCH] = -1;
 
 
   function Promise( func ) {
 
     var that = this;
 
-    // this is implied, but unnecessary to declare explicitly
     // that[STATE] = 0;
+    // that[ARGS] = [];
+    // that[_READY] = false;
 
-    forEach([ ARGS , _THEN , _CATCH , _ALWAYS ] , function( key ) {
+    forEach([ _THEN , _CATCH , _ALWAYS ] , function( key ) {
       that[key] = [];
     });
 
@@ -70,18 +71,23 @@
     var handlers = that[type];
     var len = length( handlers );
     var i = 0;
+    var returned;
 
     return trycatch( that , function() {
 
       while (i < len) {
-        args = ( STATEMAP[type] ? handlers.shift() : handlers[i] ).apply( UNDEFINED , [ args ]);
-        if (isPromise( args )) {
-          return that[ PASS ]( args );
+        returned = ( STATEMAP[type] ? handlers.shift() : handlers[i] ).apply( UNDEFINED , [ args ]);
+        if (isPromise( returned )) {
+          return that[ PASS ]( returned );
         }
+        else if (type == _CATCH) {
+          break;
+        }
+        args = STATEMAP[type] ? returned : args;
         i++;
       }
 
-      that[ARGS] = [ args ];
+      that[ARGS] = that[STATE] ? that[ARGS] : [ args ];
       that[STATE] = STATEMAP[type] || that[STATE];
 
       return that;
@@ -111,6 +117,7 @@
     forEach([ _THEN , _CATCH , _ALWAYS ] , function( key ) {
       promise[key] = that[key];
     });
+    that[ARGS] = promise;
     return promise;
   };
 
@@ -147,12 +154,11 @@
       }
       else {
         async(function() {
-          if (context[STATE]) {
-            return;
+          if (!context[STATE]) {
+            context
+            [ _EXEC ]( type , args )
+            [ _EXEC ]( _ALWAYS , args );
           }
-          context
-          [ _EXEC ]( type , args )
-          [ _EXEC ]( _ALWAYS , args );
         });
       }
     }
@@ -164,6 +170,10 @@
   function checkArray( arr , resolve , reject , test , single ) {
 
     return function() {
+
+      arr = arr.map(function( promise , i ) {
+        return isPromise( promise[ARGS] ) ? promise[ARGS] : arr[i];
+      });
       
       var resolved = filter( arr , 1 );
       var rejected = filter( arr , -1 );
