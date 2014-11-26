@@ -9,6 +9,11 @@
   var expect = chai.expect;
 
 
+  var http = require( 'http' );
+  var url = require( 'url' );
+  var querystring = require( 'querystring' );
+
+
   [
     [ WeePromise , 'wee-promise' ],
     [ ES6_Promise , 'es6-promise' ]
@@ -21,6 +26,286 @@
     
 
     describe( name , function() {
+
+      describe( 'functionality' , function() {
+
+        it( 'when a single promise is rejected' , function( done ) {
+          new Promise(function( resolve , reject ) {
+            throw new Error( 'error' );
+          })
+          .then(function() {
+            log('then');
+          })
+          .catch(function( err ) {
+            log('catch');
+            done();
+          });
+        });
+
+        it( 'when a single promise chain is rejected WITHOUT a catch handler on the child' , function( done ) {
+          new Promise(function( resolve , reject ) {
+            resolve();
+          })
+          .then(function() {
+            return new Promise(function( resolve , reject ) {
+              throw new Error( 'error' );
+            })
+            .then(function() {
+              return true;
+            });
+          })
+          .then(function( args ) {
+            log(args);
+            done();
+          })
+          .catch(function( err ) {
+            log('catch');
+            done();
+          });
+        });
+
+        it( 'when a single promise chain is rejected WITH a catch handler on the child' , function( done ) {
+          new Promise(function( resolve , reject ) {
+            resolve();
+          })
+          .then(function() {
+            return new Promise(function( resolve , reject ) {
+              throw new Error( 'error' );
+            })
+            .then(function() {
+              return true;
+            })
+            .catch(function() {
+              return false;
+            });
+          })
+          .then(function( args ) {
+            log(args);
+            done();
+          })
+          .catch(function( err ) {
+            log('catch');
+            done();
+          });
+        });
+
+        it( 'when a promise list WITHOUT individual catch handlers is rejected' , function( done ) {
+          
+          var promise1 = new Promise(function( resolve , reject ) {
+            resolve();
+          })
+          .then(function() {
+            return true;
+          });
+
+          var promise2 = new Promise(function( resolve , reject ) {
+            throw new Error( 'error' );
+          })
+          .then(function() {
+            return true;
+          });
+
+          Promise.all([ promise1 , promise2 ]).then(function( args ) {
+            log( args );
+            done();
+          })
+          .catch(function( err ) {
+            log('catch');
+            done();
+          });
+        });
+
+        it( 'when a promise list WITH individual catch handlers is rejected' , function( done ) {
+          
+          var promise1 = new Promise(function( resolve , reject ) {
+            resolve();
+          })
+          .then(function() {
+            return true;
+          })
+          .catch(function() {
+            return false;
+          });
+
+          var promise2 = new Promise(function( resolve , reject ) {
+            throw new Error( 'error' );
+          })
+          .then(function() {
+            return true;
+          })
+          .catch(function() {
+            return false;
+          });
+
+          Promise.all([ promise1 , promise2 ]).then(function( args ) {
+            log( args );
+            done();
+          })
+          .catch(function( err ) {
+            log('catch');
+            done();
+          });
+        });
+
+        it( 'when a promise list chain WITHOUT individual catch handlers is rejected' , function( done ) {
+          
+          var promise1 = new Promise(function( resolve , reject ) {
+            resolve();
+          })
+          .then(function() {
+            return new Promise(function( resolve , reject ) {
+              resolve();
+            });
+          })
+          .then(function() {
+            return true;
+          });
+
+          var promise2 = new Promise(function( resolve , reject ) {
+            resolve();
+          })
+          .then(function() {
+            return new Promise(function( resolve , reject ) {
+              throw new Error( 'error' );
+            });
+          })
+          .then(function() {
+            return true;
+          });
+
+          Promise.all([ promise1 , promise2 ]).then(function( args ) {
+            log( args );
+            done();
+          })
+          .catch(function( err ) {
+            log('catch');
+            done();
+          });
+        });
+
+        it( 'when a promise list chain WITH individual catch handlers is rejected' , function( done ) {
+          
+          var promise1 = new Promise(function( resolve , reject ) {
+            resolve();
+          })
+          .then(function() {
+            return new Promise(function( resolve , reject ) {
+              resolve();
+            });
+          })
+          .then(function() {
+            return true;
+          })
+          .catch(function() {
+            return false;
+          });
+
+          var promise2 = new Promise(function( resolve , reject ) {
+            resolve();
+          })
+          .then(function() {
+            return new Promise(function( resolve , reject ) {
+              throw new Error( 'error' );
+            });
+          })
+          .then(function() {
+            return true;
+          })
+          .catch(function() {
+            return false;
+          });
+
+          Promise.all([ promise1 , promise2 ]).then(function( args ) {
+            log( args );
+            done();
+          })
+          .catch(function( err ) {
+            log('catch');
+            done();
+          });
+        });
+
+      });
+
+      return;
+
+      describe( 'Special Cases' , function() {
+
+        it( 'should fail recursively until maxAttempts is reached' , function( done ) {
+
+          var maxAttempts = 3;
+
+          loadImages( overlays() ).then(function( args ) {
+            log(args);
+            done();
+          })
+          .catch( done );
+          
+          function overlays() {
+            var cloud = 'http://s3-us-west-2.amazonaws.com/s.cdpn.io/141981/cloud.png';
+            return {
+              image0: { src: cloud + '?r=' + uts() },
+              image1: { src: cloud + 'FAIL?r=' + uts() },
+              image2: { src: cloud + '?r=' + uts() },
+              image3: { src: cloud + '?r=' + uts() }
+            };
+          }
+
+          function uts() {
+            return Date.now() + '.' + Math.floor( Math.random() * 100000 );
+          }
+
+          function loadImages( srcObj ) {
+
+            function load( imgObj , key ) {
+              var statusCode, img = '\u2713\u0020success!';
+              var promise = new Promise(function( resolve , reject ) {
+                log('GET -> ' + key);
+                http.get( imgObj.src )
+                .on( 'response' , function( res ) {
+                  statusCode = parseInt( res.statusCode , 10 );
+                  res.on( 'data' , function() {} );
+                  res.on( 'end' , function() {
+                    if (statusCode === 200) {
+                      resolve();
+                    }
+                    else {
+                      reject();
+                    }
+                  });
+                })
+                .on( 'error' , function() {
+                  reject();
+                });
+              })
+              .then(function() {
+                return img;
+              })
+              .catch(function() {
+                //log(promise);
+                imgObj.attempts++;
+                if (imgObj.attempts <= maxAttempts) {
+                  log(key + ' failed, attempts = ' + imgObj.attempts);
+                  return load( imgObj , key );
+                }
+                return '\u2716\u0020error!';
+              });
+              return promise;
+            }
+
+            return Promise.all(
+              Object.keys( srcObj ).map(function( key ) {
+                srcObj[key].attempts = 0;
+                return load( srcObj[key] , key );
+              })
+            );
+          }
+
+        });
+
+      });
+
+      return;
 
       describe( 'Constructor' , function() {
         it( 'should fail silently when an error is thrown' , function( done ) {

@@ -11,6 +11,15 @@
 
 }(function( setTimeout ) {
 
+  var util = require( 'util' );
+  function log() {
+    var args = Array.prototype.slice.call( arguments , 0 );
+    args = args.map(function( arg ) {
+      return util.inspect.apply( util , [ arg , { colors: true, depth: 3 }]);
+    });
+    console.log.apply( console , args );
+  }
+
 
   var UNDEFINED;
   var PROTOTYPE = 'prototype';
@@ -71,16 +80,31 @@
     var handlers = that[type];
     var len = length( handlers );
     var i = 0;
-    var returned;
+    var handler, returned;
 
     return trycatch( that , function() {
 
       while (i < len) {
-        returned = ( STATEMAP[type] ? handlers.shift() : handlers[i] ).apply( UNDEFINED , [ args ]);
+        //returned = ( STATEMAP[type] ? handlers.shift() : handlers[i] ).apply( UNDEFINED , [ args ]);
+        handler = STATEMAP[type] ? handlers.shift() : handlers[i];
+        returned = handler.apply( UNDEFINED , [ args ]);
+        /*if (STATEMAP[type]) {
+          handlers.shift();
+        }*/
         if (isPromise( returned )) {
-          return that[ PASS ]( returned );
+          //log(that);
+          //console.log(type,'returned promise');
+          //if (STATEMAP[type]) {
+            //log(returned);
+            handlers.unshift( handler );
+            return that[ PASS ]( returned );
+          //}
         }
         else if (type == _CATCH) {
+          // !!! this needs to behave differently depending on whether
+          // an error was thrown or the promise was rejected by calling reject
+          //log(that);
+          //console.log('catch');
           break;
         }
         args = STATEMAP[type] ? returned : args;
@@ -174,6 +198,12 @@
       arr = arr.map(function( promise , i ) {
         return isPromise( promise[ARGS] ) ? promise[ARGS] : arr[i];
       });
+      /*arr = arr.map(function( promise ) {
+        return isPromise( promise[ARGS] ) ? promise[ARGS] : promise;
+      });*/
+      /*log(arr.map(function( promise ) {
+        return promise.args;
+      }));*/
       
       var resolved = filter( arr , 1 );
       var rejected = filter( arr , -1 );
