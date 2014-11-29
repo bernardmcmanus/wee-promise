@@ -4,9 +4,11 @@
   "description": "an ultra light promises polyfill",
   "main": "wee-promise-0.2.0.min.js",
   "scripts": {
+    "httpd": "supervisor ./test/httpd/server.js",
     "test": "clear; mocha"
   },
   "devDependencies": {
+    "httpd-node": "git://github.com/elnarddogg/httpd-node.git#cb870e4de7dde3e0b55880e9c9865b00b4cf607f",
     "mocha": "1.21.4",
     "chai": "1.9.1",
     "es6-promise": ">=2.0.0",

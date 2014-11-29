@@ -1,24 +1,36 @@
-(function( Promise ) {
+(function( WeePromise ) {
 
   var global = this;
 
   if (typeof exports == 'object') {
-    module.exports = Promise;
+    module.exports = WeePromise;
   }
   else {
-    global.Promise = global.Promise || Promise;
+    global.WeePromise = WeePromise;
+    global.Promise = global.Promise || WeePromise;
   }
 
 }(function( setTimeout ) {
 
-  var util = require( 'util' );
-  function log() {
-    var args = Array.prototype.slice.call( arguments , 0 );
-    args = args.map(function( arg ) {
-      return util.inspect.apply( util , [ arg , { colors: true, depth: 3 }]);
-    });
-    console.log.apply( console , args );
-  }
+  
+  var log = (function() {
+    try {
+      var util = require( 'util' );
+      return function() {
+        var args = Array.prototype.slice.call( arguments , 0 );
+        args = args.map(function( arg ) {
+          return util.inspect.apply( util , [ arg , { colors: true, depth: 3 }]);
+        });
+        console.log.apply( console , args );
+      };
+    }
+    catch( err ) {
+      return function() {
+        var args = Array.prototype.slice.call( arguments , 0 );
+        console.log.apply( console , args );
+      };
+    }
+  }());
 
 
   var UNDEFINED;
@@ -41,7 +53,7 @@
   STATEMAP[_CATCH] = -1;
 
 
-  function Promise( func ) {
+  function WeePromise( func ) {
 
     var that = this;
 
@@ -54,18 +66,23 @@
     });
 
     async(function() {
+      
+      that.caught = !!length(that[ _CATCH ]);
+      
       trycatch( that , function() {
         func(
           getPromiseArg( that , _THEN ),
           getPromiseArg( that , _CATCH )
         );
       });
+
       that[_READY] = true;
+
     });
   }
 
 
-  Promise[ PROTOTYPE ][ _ADD ] = function( type , func ) {
+  WeePromise[ PROTOTYPE ][ _ADD ] = function( type , func ) {
     var that = this;
     if (func) {
       that[type].push( func );
@@ -74,7 +91,7 @@
   };
 
 
-  Promise[ PROTOTYPE ][ _EXEC ] = function( type , args ) {
+  WeePromise[ PROTOTYPE ][ _EXEC ] = function( type , args ) {
 
     var that = this;
     var handlers = that[type];
@@ -85,86 +102,120 @@
     return trycatch( that , function() {
 
       while (i < len) {
+
         //returned = ( STATEMAP[type] ? handlers.shift() : handlers[i] ).apply( UNDEFINED , [ args ]);
+        
+        //that.caught = that.caught !== UNDEFINED ? that.caught : !!length(that[ _CATCH ]);
+
         handler = STATEMAP[type] ? handlers.shift() : handlers[i];
         returned = handler.apply( UNDEFINED , [ args ]);
-        /*if (STATEMAP[type]) {
-          handlers.shift();
-        }*/
-        if (isPromise( returned )) {
-          //log(that);
-          //console.log(type,'returned promise');
-          //if (STATEMAP[type]) {
-            //log(returned);
-            handlers.unshift( handler );
-            return that[ PASS ]( returned );
-          //}
+        args = STATEMAP[type] ? returned : args;
+
+        if (isPromise( returned ) && STATEMAP[type]) {
+          that[STATE] = STATEMAP[type] || that[STATE];
+          return that[ PASS ]( returned , type );
         }
-        else if (type == _CATCH) {
-          // !!! this needs to behave differently depending on whether
-          // an error was thrown or the promise was rejected by calling reject
-          //log(that);
-          //console.log('catch');
+        else if (type == _CATCH && that.caught && that.isChild) {
+          return that[ _EXEC ]( _THEN , returned );
+        }
+        /*else if (type == _CATCH && that.caught && !that.isChild) {
+          debugger;
+          args = that[STATE] ? returned : args;
+          break;
+        }*/
+        /*else if (type == _CATCH && that.caught && that.isMember) {
+          //debugger;
+          args = STATEMAP[type] ? returned : args;
+          break;
+        }*/
+        else if (type == _CATCH /*&& !that.caught*/) {
           break;
         }
-        args = STATEMAP[type] ? returned : args;
+        //args = STATEMAP[type] ? returned : args;
         i++;
       }
 
       that[ARGS] = that[STATE] ? that[ARGS] : [ args ];
       that[STATE] = STATEMAP[type] || that[STATE];
 
+      if (type === _CATCH && that.caught && (!that.isChild || that.isList)) {
+        that[STATE] = STATEMAP[_THEN];
+      }
+      /*if (type === _CATCH && that.caught && that.isChild) {
+        debugger;
+        that[STATE] = STATEMAP[_THEN];
+      }*/
+
       return that;
     });
   };
 
 
-  Promise[ PROTOTYPE ][ ALWAYS ] = function( func ) {
+  WeePromise[ PROTOTYPE ][ ALWAYS ] = function( func ) {
     return this[ _ADD ]( _ALWAYS , func );
   };
 
 
-  Promise[ PROTOTYPE ][ THEN ] = function( onresolve , onreject ) {
+  WeePromise[ PROTOTYPE ][ THEN ] = function( onresolve , onreject ) {
     return this
       [ _ADD ]( _THEN , onresolve )
       [CATCH]( onreject );
   };
 
 
-  Promise[ PROTOTYPE ][ CATCH ] = function( func ) {
+  WeePromise[ PROTOTYPE ][ CATCH ] = function( func ) {
     return this[ _ADD ]( _CATCH , func );
   };
 
 
-  Promise[ PROTOTYPE ][ PASS ] = function( promise ) {
+  WeePromise[ PROTOTYPE ][ PASS ] = function( promise , type ) {
     var that = this;
+    //promise.caught = !!length(promise[ _CATCH ]);
+    that.isChild = true;
     forEach([ _THEN , _CATCH , _ALWAYS ] , function( key ) {
-      promise[key] = that[key];
+      if (key !== type) {
+        promise[key] = promise[key].concat( that[key] );
+      }
+      else {
+        promise[key] = that[key];
+      }
     });
     that[ARGS] = promise;
     return promise;
   };
 
 
-  Promise.all = function( arr ) {
-    return new Promise(function( resolve , reject ) {
+  WeePromise.all = function( arr ) {
+    forEach( arr , function( promise ) {
+      promise.isMember = true;
+    });
+    var p = new WeePromise(function( resolve , reject ) {
+      p.isList = true;
       forEach( arr , function( promise ) {
+        //promise.isMember = true;
         promise[ ALWAYS ](
           checkArray( arr , resolve , reject , length( arr ))
         );
       });
     });
+    return p;
   };
 
 
-  Promise.race = function( arr ) {
-    return new Promise(function( resolve , reject ) {
+  WeePromise.race = function( arr ) {
+    forEach( arr , function( promise ) {
+      promise.isMember = true;
+    });
+    var p = new WeePromise(function( resolve , reject ) {
+      p.isList = true;
       forEach( arr , function( promise ) {
+        //promise.isMember = true;
         promise[ ALWAYS ](
           checkArray( arr , resolve , reject , 1 , true )
         );
       });
     });
+    return p;
   };
 
 
@@ -233,7 +284,7 @@
 
 
   function isPromise( subject ) {
-    return subject instanceof Promise;
+    return subject instanceof WeePromise;
   }
 
 
@@ -262,7 +313,7 @@
   }
 
 
-  return Promise;
+  return WeePromise;
 
   
 }( setTimeout )));

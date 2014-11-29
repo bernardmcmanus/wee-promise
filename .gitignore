@@ -1,6 +1,5 @@
-# npm & grunt #
-###############
 node_modules
+.idea
 
 # OS generated files #
 ######################

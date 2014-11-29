@@ -27,9 +27,33 @@
 
     describe( name , function() {
 
+      /*describe( '#all()' , function() {
+        describe( '#catch()' , function() {
+          it( 'should be executed if a promise is rejected (asynchronous)' , function( done ) {
+
+            all_catch2( Promise ).then(function( args ) {
+              log('then');
+              log(args);
+              done();
+            })
+            .catch(function( args ) {
+              log('catch');
+              log(args);
+              done();
+            });
+
+          });
+        });
+      });
+
+      return;*/
+
       describe( 'functionality' , function() {
 
-        it( 'when a single promise is rejected' , function( done ) {
+        return;
+
+        // OK
+        /*it( 'when a single promise is rejected' , function( done ) {
           new Promise(function( resolve , reject ) {
             throw new Error( 'error' );
           })
@@ -37,11 +61,13 @@
             log('then');
           })
           .catch(function( err ) {
+            log('error -> ' + err.message);
             log('catch');
             done();
           });
         });
 
+        // OK
         it( 'when a single promise chain is rejected WITHOUT a catch handler on the child' , function( done ) {
           new Promise(function( resolve , reject ) {
             resolve();
@@ -64,41 +90,52 @@
           });
         });
 
+        // OK
         it( 'when a single promise chain is rejected WITH a catch handler on the child' , function( done ) {
-          new Promise(function( resolve , reject ) {
+          var p2, p1 = new Promise(function( resolve , reject ) {
+            log(0);
             resolve();
           })
           .then(function() {
-            return new Promise(function( resolve , reject ) {
+            p2 = new Promise(function( resolve , reject ) {
+              log(1);
               throw new Error( 'error' );
             })
             .then(function() {
+              log('child-then');
               return true;
             })
             .catch(function() {
+              log(2);
               return false;
             });
+            return p2;
           })
           .then(function( args ) {
+            log(3);
             log(args);
             done();
           })
           .catch(function( err ) {
-            log('catch');
+            log('all-catch');
             done();
           });
         });
 
+        // OK
         it( 'when a promise list WITHOUT individual catch handlers is rejected' , function( done ) {
           
           var promise1 = new Promise(function( resolve , reject ) {
+            log( '0-0' );
             resolve();
           })
           .then(function() {
+            log( '0-1' );
             return true;
           });
 
           var promise2 = new Promise(function( resolve , reject ) {
+            log( '1-0' );
             throw new Error( 'error' );
           })
           .then(function() {
@@ -106,21 +143,25 @@
           });
 
           Promise.all([ promise1 , promise2 ]).then(function( args ) {
+            log('all-then');
             log( args );
             done();
           })
-          .catch(function( err ) {
-            log('catch');
+          .catch(function( args ) {
+            log('all-catch');
             done();
           });
-        });
+        });*/
 
+        // FIX
         it( 'when a promise list WITH individual catch handlers is rejected' , function( done ) {
           
           var promise1 = new Promise(function( resolve , reject ) {
+            log('0-0');
             resolve();
           })
           .then(function() {
+            log('0-1');
             return true;
           })
           .catch(function() {
@@ -128,61 +169,76 @@
           });
 
           var promise2 = new Promise(function( resolve , reject ) {
+            log('1-0');
             throw new Error( 'error' );
           })
           .then(function() {
             return true;
           })
           .catch(function() {
+            log('1-1');
             return false;
           });
 
           Promise.all([ promise1 , promise2 ]).then(function( args ) {
+            log('all-then');
             log( args );
             done();
           })
           .catch(function( err ) {
-            log('catch');
+            log('all-catch');
             done();
           });
         });
 
-        it( 'when a promise list chain WITHOUT individual catch handlers is rejected' , function( done ) {
+        // OK
+        /*it( 'when a promise list chain WITHOUT individual catch handlers is rejected' , function( done ) {
           
           var promise1 = new Promise(function( resolve , reject ) {
+            log('0-0');
             resolve();
           })
           .then(function() {
             return new Promise(function( resolve , reject ) {
+              log('0-1');
               resolve();
             });
           })
           .then(function() {
+            log('0-2');
             return true;
           });
 
           var promise2 = new Promise(function( resolve , reject ) {
+            log('1-0');
             resolve();
           })
           .then(function() {
             return new Promise(function( resolve , reject ) {
+              log('1-1');
               throw new Error( 'error' );
             });
           })
           .then(function() {
+            log('child2-then');
             return true;
           });
 
           Promise.all([ promise1 , promise2 ]).then(function( args ) {
+            log('all-then');
             log( args );
             done();
           })
-          .catch(function( err ) {
+          .catch(function( args ) {
+            log(args);
             log('catch');
             done();
           });
-        });
+        });*/
 
+        return;
+
+        // FIX
         it( 'when a promise list chain WITH individual catch handlers is rejected' , function( done ) {
           
           var promise1 = new Promise(function( resolve , reject ) {
@@ -227,9 +283,9 @@
 
       });
 
-      return;
+      //return;
 
-      describe( 'Special Cases' , function() {
+      /*describe( 'Special Cases' , function() {
 
         it( 'should fail recursively until maxAttempts is reached' , function( done ) {
 
@@ -305,7 +361,7 @@
 
       });
 
-      return;
+      return;*/
 
       describe( 'Constructor' , function() {
         it( 'should fail silently when an error is thrown' , function( done ) {
@@ -930,7 +986,6 @@
     var count = 5;
     var target = [ 2 , 3 ];
     var promises = [];
-    var arr = [];
 
     function determine( i , resolve , reject ) {
       if (target.indexOf( i ) >= 0) {
@@ -961,6 +1016,44 @@
     return Promise.all( promises ).catch(function( result ) {
       callback( result , target[0] );
     });
+  }
+
+
+  function all_catch2( Promise , callback ) {
+
+    var count = 5;
+    var target = [ 2 , 3 ];
+    var promises = [];
+
+    function determine( i , resolve , reject ) {
+      if (target.indexOf( i ) >= 0) {
+        reject( i );
+      }
+      else {
+        resolve( i );
+      }
+    }
+
+    for (var i = 0; i < count; i++) {
+      promises.push(
+        (function( i ) {
+          var p = new Promise(function( resolve , reject ) {
+            async(function() {
+              determine( i , resolve , reject );
+            });
+          });
+          p.then(function( val ) {
+            log(val);
+          });
+          p.catch(function( val ) {
+            log(val);
+          });
+          return p;
+        }( i ))
+      );
+    }
+
+    return Promise.all( promises );
   }
 
 
