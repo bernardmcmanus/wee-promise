@@ -35,8 +35,8 @@
       });
 
     }, i * 100);*/
-
-    async(function() {
+    
+    /*async(function() {
 
       console.log('--------------- ' + Promise.name + ' ---------------');
 
@@ -55,7 +55,7 @@
         })
         .catch(function() {
           console.log(2);
-          debugger;
+          //debugger;
           return false;
         });
         return p2;
@@ -69,7 +69,7 @@
         console.log('catch');
       });
 
-    }, i * 100);
+    }, i * 100);*/
 
     /*async(function() {
 
@@ -165,6 +165,85 @@
       });
 
     }, i * 100);*/
+
+    /*async(function() {
+
+      console.log('--------------- ' + Promise.name + ' ---------------');
+
+      var routes = [],
+      promises = [ 0 , 1 ].map(function( i ) {
+
+        var route = routes[i] = [];
+
+        return new Promise(function( resolve , reject ) {
+          route.push( 0 );
+          resolve();
+        })
+        .then(function() {
+          return new Promise(function( resolve , reject ) {
+            route.push( 1 );
+            if (!i) {
+              resolve();
+            }
+            else {
+              throw new Error( 'error' );
+            }
+          });
+        })
+        .then(function() {
+          route.push( 2 );
+          route.push( 'then-' + i );
+          return true;
+        })
+        .catch(function() {
+          route.push( 2 );
+          route.push( 'catch-' + i );
+          //debugger;
+          return false;
+        });
+
+      });
+
+      Promise.all( promises ).then(function( args ) {
+        log(routes);
+        log(args);
+        log('all-then');
+      })
+      .catch(function( err ) {
+        log('all-catch');
+      });
+
+    }, i * 100);*/
+
+    async(function() {
+
+      console.log('--------------- ' + Promise.name + ' ---------------');
+
+      new Promise(function( resolve , reject ) {
+        resolve();
+      })
+      .then(function() {
+        return new Promise(function( resolve , reject ) {
+          throw new Error( 'error' );
+        })
+        .then(function() {
+          log('child-then');
+          return true;
+        })
+        .catch(function() {
+          log('child-catch');
+          return false;
+        });
+      })
+      .then(function( args ) {
+        log('parent-then');
+        log(args);
+      })
+      .catch(function() {
+        log('parent-catch');
+      });
+
+    }, i * 100);
 
   });
 

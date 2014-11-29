@@ -1,17 +1,24 @@
 (function() {
 
+  'use strict';
+
 
   var util = require( 'util' );
   var WeePromise = require( '../index.js' );
   var ES6_Promise = require( 'es6-promise' ).Promise;
   var chai = require( 'chai' );
-  var assert = chai.assert;
+  var colors = require( 'colors' );
   var expect = chai.expect;
 
 
   var http = require( 'http' );
   var url = require( 'url' );
   var querystring = require( 'querystring' );
+
+
+  colors.setTheme({
+    h1: 'cyan'
+  });
 
 
   [
@@ -25,7 +32,7 @@
     var name = args[1];
     
 
-    describe( name , function() {
+    describe(( name ).h1 , function() {
 
       /*describe( '#all()' , function() {
         describe( '#catch()' , function() {
@@ -48,21 +55,18 @@
 
       return;*/
 
-      describe( 'functionality' , function() {
-
-        return;
+      describe( 'Functional Tests' , function() {
 
         // OK
-        /*it( 'when a single promise is rejected' , function( done ) {
+        it( 'when a single promise is rejected' , function( done ) {
           new Promise(function( resolve , reject ) {
             throw new Error( 'error' );
           })
           .then(function() {
-            log('then');
+            expect( true ).to.equal( false );
           })
           .catch(function( err ) {
-            log('error -> ' + err.message);
-            log('catch');
+            expect( err ).to.be.an.instanceOf( Error );
             done();
           });
         });
@@ -77,208 +81,226 @@
               throw new Error( 'error' );
             })
             .then(function() {
+              expect( true ).to.equal( false );
               return true;
             });
           })
           .then(function( args ) {
-            log(args);
+            expect( true ).to.equal( false );
             done();
           })
           .catch(function( err ) {
-            log('catch');
+            expect( err ).to.be.an.instanceOf( Error );
             done();
           });
         });
 
         // OK
         it( 'when a single promise chain is rejected WITH a catch handler on the child' , function( done ) {
-          var p2, p1 = new Promise(function( resolve , reject ) {
-            log(0);
+
+          var route = [],
+          routeFinal = [ 0 , 1 , 2 ];
+
+          new Promise(function( resolve , reject ) {
+            route.push( 0 );
             resolve();
           })
           .then(function() {
-            p2 = new Promise(function( resolve , reject ) {
-              log(1);
+            return new Promise(function( resolve , reject ) {
+              route.push( 1 );
               throw new Error( 'error' );
             })
             .then(function() {
-              log('child-then');
+              expect( true ).to.equal( false );
               return true;
             })
             .catch(function() {
-              log(2);
+              route.push( 2 );
               return false;
             });
-            return p2;
           })
           .then(function( args ) {
-            log(3);
-            log(args);
+            expect( route ).to.eql( routeFinal );
+            expect( args ).to.equal( false );
             done();
           })
-          .catch(function( err ) {
-            log('all-catch');
-            done();
-          });
+          .catch( done );
         });
 
         // OK
         it( 'when a promise list WITHOUT individual catch handlers is rejected' , function( done ) {
-          
-          var promise1 = new Promise(function( resolve , reject ) {
-            log( '0-0' );
-            resolve();
-          })
-          .then(function() {
-            log( '0-1' );
-            return true;
+
+          var routes = [],
+          routesFinal = [
+            [ '0-0' , '0-1' ],
+            [ '1-0' , '1-1' ]
+          ],
+          promises = [ 0 , 1 ].map(function( i ) {
+
+            var route = routes[i] = [];
+
+            return new Promise(function( resolve , reject ) {
+              route.push( i + '-0' );
+              if (i) {
+                route.push( i + '-1' );
+                throw new Error( 'error' );
+              }
+              else {
+                resolve();
+              }
+            })
+            .then(function() {
+              route.push( i + '-1' );
+            });
+
           });
 
-          var promise2 = new Promise(function( resolve , reject ) {
-            log( '1-0' );
-            throw new Error( 'error' );
-          })
-          .then(function() {
-            return true;
-          });
-
-          Promise.all([ promise1 , promise2 ]).then(function( args ) {
-            log('all-then');
-            log( args );
-            done();
-          })
-          .catch(function( args ) {
-            log('all-catch');
-            done();
-          });
-        });*/
-
-        // FIX
-        it( 'when a promise list WITH individual catch handlers is rejected' , function( done ) {
-          
-          var promise1 = new Promise(function( resolve , reject ) {
-            log('0-0');
-            resolve();
-          })
-          .then(function() {
-            log('0-1');
-            return true;
-          })
-          .catch(function() {
-            return false;
-          });
-
-          var promise2 = new Promise(function( resolve , reject ) {
-            log('1-0');
-            throw new Error( 'error' );
-          })
-          .then(function() {
-            return true;
-          })
-          .catch(function() {
-            log('1-1');
-            return false;
-          });
-
-          Promise.all([ promise1 , promise2 ]).then(function( args ) {
-            log('all-then');
-            log( args );
-            done();
+          Promise.all( promises ).then(function( args ) {
+            expect( true ).to.equal( false );
           })
           .catch(function( err ) {
-            log('all-catch');
+            expect( err ).to.be.an.instanceOf( Error );
+            expect( err.message ).to.equal( 'error' );
+            expect( routes ).to.eql( routesFinal );
             done();
           });
         });
 
         // OK
-        /*it( 'when a promise list chain WITHOUT individual catch handlers is rejected' , function( done ) {
-          
-          var promise1 = new Promise(function( resolve , reject ) {
-            log('0-0');
-            resolve();
-          })
-          .then(function() {
+        it( 'when a promise list WITH individual catch handlers is rejected' , function( done ) {
+
+          var routes = [],
+          routesFinal = [
+            [ '0-0' , '0-1' ],
+            [ '1-0' , '1-1' ]
+          ],
+          argsFinal = [ true , false ],
+          promises = [ 0 , 1 ].map(function( i ) {
+
+            var route = routes[i] = [];
+
             return new Promise(function( resolve , reject ) {
-              log('0-1');
+              route.push( i + '-0' );
+              if (i) {
+                throw new Error( 'error' );
+              }
+              else {
+                resolve();
+              }
+            })
+            .then(function() {
+              route.push( i + '-1' );
+              return true;
+            })
+            .catch(function() {
+              route.push( i + '-1' );
+              return false;
+            });
+          });
+
+          Promise.all( promises ).then(function( args ) {
+            expect( args ).to.eql( argsFinal );
+            expect( routes ).to.eql( routesFinal );
+            done();
+          })
+          .catch( done );
+        });
+
+        // OK
+        it( 'when a promise list chain WITHOUT individual catch handlers is rejected' , function( done ) {
+
+          var routes = [],
+          routesFinal = [
+            [ '0-0' , '0-1' , '0-2' ],
+            [ '1-0' , '1-1' , '1-2' ]
+          ],
+          promises = [ 0 , 1 ].map(function( i ) {
+
+            var route = routes[i] = [];
+
+            return new Promise(function( resolve , reject ) {
+              route.push( i + '-0' );
               resolve();
+            })
+            .then(function() {
+              return new Promise(function( resolve , reject ) {
+                route.push( i + '-1' );
+                if (!i) {
+                  resolve();
+                }
+                else {
+                  route.push( i + '-2' );
+                  throw new Error( 'error' );
+                }
+              });
+            })
+            .then(function() {
+              route.push( i + '-2' );
+              return true;
             });
-          })
-          .then(function() {
-            log('0-2');
-            return true;
+
           });
 
-          var promise2 = new Promise(function( resolve , reject ) {
-            log('1-0');
-            resolve();
-          })
-          .then(function() {
-            return new Promise(function( resolve , reject ) {
-              log('1-1');
-              throw new Error( 'error' );
-            });
-          })
-          .then(function() {
-            log('child2-then');
-            return true;
-          });
-
-          Promise.all([ promise1 , promise2 ]).then(function( args ) {
-            log('all-then');
-            log( args );
-            done();
-          })
-          .catch(function( args ) {
-            log(args);
-            log('catch');
-            done();
-          });
-        });*/
-
-        return;
-
-        // FIX
-        it( 'when a promise list chain WITH individual catch handlers is rejected' , function( done ) {
-          
-          var promise1 = new Promise(function( resolve , reject ) {
-            resolve();
-          })
-          .then(function() {
-            return new Promise(function( resolve , reject ) {
-              resolve();
-            });
-          })
-          .then(function() {
-            return true;
-          })
-          .catch(function() {
-            return false;
-          });
-
-          var promise2 = new Promise(function( resolve , reject ) {
-            resolve();
-          })
-          .then(function() {
-            return new Promise(function( resolve , reject ) {
-              throw new Error( 'error' );
-            });
-          })
-          .then(function() {
-            return true;
-          })
-          .catch(function() {
-            return false;
-          });
-
-          Promise.all([ promise1 , promise2 ]).then(function( args ) {
-            log( args );
-            done();
+          Promise.all( promises ).then(function( args ) {
+            expect( true ).to.equal( false );
           })
           .catch(function( err ) {
-            log('catch');
-            done();
+            async(function() {
+              expect( err ).to.be.an.instanceOf( Error );
+              expect( routes ).to.eql( routesFinal );
+              done();
+            })
+          })
+          .catch( done );
+        });
+
+        // OK
+        it( 'when a promise list chain WITH individual catch handlers is rejected' , function( done ) {
+
+          var routes = [],
+          routesFinal = [
+            [ 0 , 1 , 2 , 'then-0' ],
+            [ 0 , 1 , 2 , 'catch-1' ]
+          ],
+          argsFinal = [ true , false ],
+          promises = [ 0 , 1 ].map(function( i ) {
+
+            var route = routes[i] = [];
+
+            return new Promise(function( resolve , reject ) {
+              route.push( 0 );
+              resolve();
+            })
+            .then(function() {
+              return new Promise(function( resolve , reject ) {
+                route.push( 1 );
+                if (!i) {
+                  resolve();
+                }
+                else {
+                  throw new Error( 'error' );
+                }
+              });
+            })
+            .then(function() {
+              route.push( 2 );
+              route.push( 'then-' + i );
+              return true;
+            })
+            .catch(function() {
+              route.push( 2 );
+              route.push( 'catch-' + i );
+              return false;
+            });
+
           });
+
+          Promise.all( promises ).then(function( args ) {
+            expect( args ).to.eql( argsFinal );
+            expect( routes ).to.eql( routesFinal );
+            done();
+          })
+          .catch( done );
         });
 
       });
@@ -569,7 +591,7 @@
             throw new Error( 'error' );
           })
           .catch(function( err ) {
-            assert.instanceOf( err , Error );
+            expect( err ).to.be.an.instanceOf( Error );
             done();
           });
         });
@@ -581,7 +603,7 @@
             throw new Error( 'error' );
           })
           .catch(function( err ) {
-            assert.instanceOf( err , Error );
+            expect( err ).to.be.an.instanceOf( Error );
             done();
           });
         });
@@ -590,11 +612,15 @@
             resolve();
           })
           .then(function() {
-            throw new Error( 'error' );
+            throw new Error( 'error1' );
           })
           .catch(function( err ) {
-            async( done );
-            throw new Error( 'error' );
+            throw new Error( 'error2' );
+          })
+          .catch(function( err ) {
+            expect( err.message ).to.equal( 'error2' );
+            expect( err ).to.be.an.instanceOf( Error );
+            done();
           });
         });
         it( 'should receive the error thrown in the resolver function' , function( done ) {
@@ -602,7 +628,7 @@
             throw new Error( 'error' );
           })
           .catch(function( err ) {
-            assert.instanceOf( err , Error );
+            expect( err ).to.be.an.instanceOf( Error );
             done();
           });
         });
@@ -614,7 +640,7 @@
             throw new Error( 'error' );
           })
           .catch(function( err ) {
-            assert.instanceOf( err , Error );
+            expect( err ).to.be.an.instanceOf( Error );
             done();
           });
         });
@@ -837,22 +863,14 @@
               expect( result ).to.equal( test );
               done();
             })
-            .catch(function( err ) {
-              if (err instanceof Error) {
-                done( err );
-              }
-            });
+            .catch( done );
           });
           it( 'should receive arguments from the first promise that was rejected (synchronous)' , function( done ) {
             all_catch( Promise , true , function( result , test ) {
               expect( result ).to.equal( test );
               done();
             })
-            .catch(function( err ) {
-              if (err instanceof Error) {
-                done( err );
-              }
-            });
+            .catch( done );
           });
           it( 'should handle promise chains' , function( done ) {
 
@@ -1037,18 +1055,17 @@
     for (var i = 0; i < count; i++) {
       promises.push(
         (function( i ) {
-          var p = new Promise(function( resolve , reject ) {
+          return new Promise(function( resolve , reject ) {
             async(function() {
               determine( i , resolve , reject );
             });
+          })
+          .then(function( val ) {
+            return true;
+          })
+          .catch(function( val ) {
+            return false;
           });
-          p.then(function( val ) {
-            log(val);
-          });
-          p.catch(function( val ) {
-            log(val);
-          });
-          return p;
         }( i ))
       );
     }

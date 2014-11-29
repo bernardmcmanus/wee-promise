@@ -66,6 +66,10 @@
     });
 
     async(function() {
+
+      /*if (that.__CHILD !== UNDEFINED) {
+        debugger;
+      }*/
       
       that.caught = !!length(that[ _CATCH ]);
       
@@ -104,47 +108,37 @@
       while (i < len) {
 
         //returned = ( STATEMAP[type] ? handlers.shift() : handlers[i] ).apply( UNDEFINED , [ args ]);
-        
-        //that.caught = that.caught !== UNDEFINED ? that.caught : !!length(that[ _CATCH ]);
+
+        if (STATEMAP[type] && that[STATE] === STATEMAP[type] && !that.caughtInit) {
+          break;
+        }
 
         handler = STATEMAP[type] ? handlers.shift() : handlers[i];
         returned = handler.apply( UNDEFINED , [ args ]);
         args = STATEMAP[type] ? returned : args;
 
-        if (isPromise( returned ) && STATEMAP[type]) {
+        if (isPromise( returned )) {
           that[STATE] = STATEMAP[type] || that[STATE];
           return that[ PASS ]( returned , type );
         }
-        else if (type == _CATCH && that.caught && that.isChild) {
+        else if (type === _CATCH && that.caught && that.isChild) {
+          //debugger;
+          that[STATE] = STATEMAP[_THEN];
+          that[ARGS] = /*that[STATE] ? that[ARGS] : */[ returned ];
           return that[ _EXEC ]( _THEN , returned );
         }
-        /*else if (type == _CATCH && that.caught && !that.isChild) {
-          debugger;
-          args = that[STATE] ? returned : args;
-          break;
-        }*/
-        /*else if (type == _CATCH && that.caught && that.isMember) {
-          //debugger;
-          args = STATEMAP[type] ? returned : args;
-          break;
-        }*/
-        else if (type == _CATCH /*&& !that.caught*/) {
+        else if (type == _CATCH) {
           break;
         }
-        //args = STATEMAP[type] ? returned : args;
         i++;
       }
 
       that[ARGS] = that[STATE] ? that[ARGS] : [ args ];
       that[STATE] = STATEMAP[type] || that[STATE];
 
-      if (type === _CATCH && that.caught && (!that.isChild || that.isList)) {
+      if (type === _CATCH && that.caught && !that.isParent) {
         that[STATE] = STATEMAP[_THEN];
       }
-      /*if (type === _CATCH && that.caught && that.isChild) {
-        debugger;
-        that[STATE] = STATEMAP[_THEN];
-      }*/
 
       return that;
     });
@@ -170,8 +164,12 @@
 
   WeePromise[ PROTOTYPE ][ PASS ] = function( promise , type ) {
     var that = this;
-    //promise.caught = !!length(promise[ _CATCH ]);
-    that.isChild = true;
+    promise.caughtInit = !!length(promise[ _CATCH ]);
+    that.isParent = true;
+    promise.isChild = true;
+    /*if (promise.__CHILD !== UNDEFINED) {
+      debugger;
+    }*/
     forEach([ _THEN , _CATCH , _ALWAYS ] , function( key ) {
       if (key !== type) {
         promise[key] = promise[key].concat( that[key] );
@@ -186,11 +184,11 @@
 
 
   WeePromise.all = function( arr ) {
-    forEach( arr , function( promise ) {
+    /*forEach( arr , function( promise ) {
       promise.isMember = true;
-    });
+    });*/
     var p = new WeePromise(function( resolve , reject ) {
-      p.isList = true;
+      //p.isList = true;
       forEach( arr , function( promise ) {
         //promise.isMember = true;
         promise[ ALWAYS ](
@@ -203,11 +201,11 @@
 
 
   WeePromise.race = function( arr ) {
-    forEach( arr , function( promise ) {
+    /*forEach( arr , function( promise ) {
       promise.isMember = true;
-    });
+    });*/
     var p = new WeePromise(function( resolve , reject ) {
-      p.isList = true;
+      //p.isList = true;
       forEach( arr , function( promise ) {
         //promise.isMember = true;
         promise[ ALWAYS ](
