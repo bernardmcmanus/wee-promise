@@ -155,7 +155,29 @@
 
       console.log('--------------- ' + Promise.name + ' ---------------');
 
-      all_catch2( Promise ).then(function( args ) {
+      var target = [ 2 , 3 ],
+      promises = [ 0 , 1 , 2 , 3 , 4 ].map(function( i ) {
+
+        return new Promise(function( resolve , reject ) {
+            async(function() {
+              if (target.indexOf( i ) >= 0) {
+                reject( i );
+              }
+              else {
+                resolve( i );
+              }
+            });
+          })
+          .then(function( val ) {
+            return true;
+          })
+          .catch(function( val ) {
+            return false;
+          });
+
+      });
+
+      Promise.all( promises ).then(function( args ) {
         log('then');
         log(args);
       })
@@ -246,47 +268,6 @@
     }, i * 100);
 
   });
-
-
-  function all_catch2( Promise , callback ) {
-
-    var count = 5;
-    var target = [ 2 , 3 ];
-    var promises = [];
-
-    function determine( i , resolve , reject ) {
-      if (target.indexOf( i ) >= 0) {
-        reject( i );
-      }
-      else {
-        resolve( i );
-      }
-    }
-
-    for (var i = 0; i < count; i++) {
-      promises.push(
-        (function( i ) {
-          return new Promise(function( resolve , reject ) {
-            async(function() {
-              determine( i , resolve , reject );
-            });
-          })
-          .then(function( val ) {
-            //log(val);
-            return true;
-          })
-          .catch(function( val ) {
-            //log(val);
-            return false;
-          });
-          //return p;
-        }( i ))
-      );
-    }
-
-    return Promise.all( promises );
-  }
-
 
   function log() {
     var args = Array.prototype.slice.call( arguments , 0 );
