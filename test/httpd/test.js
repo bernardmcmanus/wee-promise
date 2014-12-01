@@ -237,7 +237,7 @@
 
     }, i * 100);*/
 
-    async(function() {
+    /*async(function() {
 
       console.log('--------------- ' + Promise.name + ' ---------------');
 
@@ -263,6 +263,51 @@
       })
       .catch(function() {
         log('parent-catch');
+      });
+
+    }, i * 100);*/
+
+    async(function() {
+
+      console.log('--------------- ' + Promise.name + ' ---------------');
+
+      var promises = [ 0 , 1 ].map(function( i ) {
+        return new Promise(function( resolve , reject ) {
+          resolve();
+        })
+        .then(function( args ) {
+          return new Promise(function( resolve , reject ) {
+            if (i) {
+              log('reject');
+              reject();
+            }
+            else {
+              log('resolve');
+              resolve();
+            }
+          })
+          .then(function() {
+            log('child-then');
+            return 1;
+          })
+          .catch(function() {
+            log('child-catch');
+            return 0;
+          });
+        })
+        .catch(function( args ) {
+          log('parent-catch');
+          log( args );
+          return false;
+        });
+      });
+
+      var all = Promise.all( promises ).then(function( args ) {
+        log('all-then');
+        log( args );
+      })
+      .catch(function( err ) {
+        log('all-catch');
       });
 
     }, i * 100);

@@ -5,7 +5,7 @@
   "main": "wee-promise-0.2.0.min.js",
   "scripts": {
     "httpd": "supervisor ./test/httpd/server.js",
-    "test": "clear; mocha"
+    "test": "clear; mocha ./test/test.js"
   },
   "devDependencies": {
     "httpd-node": "git://github.com/elnarddogg/httpd-node.git#cb870e4de7dde3e0b55880e9c9865b00b4cf607f",

@@ -12,25 +12,27 @@
 
 }(function( setTimeout ) {
 
+  'use strict';
+
 
   var UNDEFINED;
-  var __ = '__';
+  var PRIVATE = '__';
   var PROTOTYPE = 'prototype';
   var STATE = 'state';
   var ARGS = 'args';
   var ALWAYS = 'always';
   var THEN = 'then';
   var CATCH = 'catch';
-  var PASS = __ + 'pass';
-  var _ALWAYS = __ + ALWAYS;
-  var _THEN = __ + THEN;
-  var _CATCH = __ + CATCH;
-  var _ADD = __ + 'add';
-  var _EXEC = __ + 'exec';
-  var _READY = __ + 'ready';
-  var _CHILD = __ + 'child';
-  var _CAUGHT = __ + 'caught';
-  var _CAUGHT_SELF = _CAUGHT + 'Self';
+  var PASS = PRIVATE + 'pass';
+  var _ALWAYS = PRIVATE + ALWAYS;
+  var _THEN = PRIVATE + THEN;
+  var _CATCH = PRIVATE + CATCH;
+  var _ADD = PRIVATE + 'add';
+  var _EXEC = PRIVATE + 'exec';
+  var _READY = PRIVATE + 'ready';
+  var _CHILD = PRIVATE + 'child';
+  var _HANDLED = PRIVATE + 'handled';
+  var _HANDLED_SELF = _HANDLED + 'Self';
 
   var STATEMAP = {};
   STATEMAP[_THEN] = 1;
@@ -44,8 +46,8 @@
     // that[STATE] = 0;
     // that[ARGS] = [];
     // that[_READY] = false;
-    // that[_CAUGHT] = false;
-    // that[_CAUGHT_SELF] = false;
+    // that[_HANDLED] = false;
+    // that[_HANDLED_SELF] = false;
     // that[_CHILD] = false;
 
     forEach([ _THEN , _CATCH , _ALWAYS ] , function( key ) {
@@ -54,7 +56,7 @@
 
     async(function() {
       
-      that[_CAUGHT] = isCaught( that );
+      that[_HANDLED] = isHandled( that );
       
       trycatch( that , function() {
         func(
@@ -90,31 +92,40 @@
 
       while (i < len) {
 
-        if (STATEMAP[type] && that[STATE] === STATEMAP[type] && !that[_CAUGHT_SELF]) {
-          break;
+        if (STATEMAP[type] && that[STATE] === STATEMAP[type] && that[_CHILD] && that[_HANDLED]) {
+          
+          handlers = !that[_HANDLED_SELF] || that[_READY] ? [] : handlers.slice( -1 );
+          i = len - 1;
+
+          if (!length( handlers )) {
+            return that;
+          }
         }
 
         returned = ( STATEMAP[type] ? handlers.shift() : handlers[i] ).apply( UNDEFINED , [ args ]);
         args = STATEMAP[type] ? returned : args;
 
         if (isPromise( returned )) {
-          return that[ PASS ]( returned , type );
+          return that[ PASS ]( returned );
         }
         else if (type === _CATCH) {
-          if (that[_CAUGHT] && that[_CHILD]) {
+          if (that[_HANDLED] && that[_CHILD]) {
             that[STATE] = STATEMAP[_THEN];
             that[ARGS] = [ returned ];
-            return that[ _EXEC ]( _THEN , returned );
+            return that
+              [ _EXEC ]( _THEN , returned )
+              [ _EXEC ]( _ALWAYS , returned );
           }
           break;
         }
+
         i++;
       }
 
       that[ARGS] = that[STATE] ? that[ARGS] : [ args ];
       that[STATE] = STATEMAP[type] || that[STATE];
 
-      if (type === _CATCH && that[_CAUGHT]) {
+      if (type === _CATCH && that[_HANDLED]) {
         that[STATE] = STATEMAP[_THEN];
       }
 
@@ -141,15 +152,15 @@
   };
 
 
-  WeePromise[ PROTOTYPE ][ PASS ] = function( promise , type ) {
+  WeePromise[ PROTOTYPE ][ PASS ] = function( promise ) {
     
     var that = this;
     
-    promise[_CAUGHT_SELF] = isCaught( promise );
+    promise[_HANDLED_SELF] = isHandled( promise );
     promise[_CHILD] = true;
 
     forEach([ _THEN , _CATCH , _ALWAYS ] , function( key ) {
-      promise[key] = (key != type ? promise[key].concat( that[key] ) : that[key]);
+      promise[key] = (promise[_HANDLED_SELF] ? promise[key].concat( that[key] ) : that[key]);
     });
 
     that[ARGS] = promise;
@@ -231,14 +242,14 @@
   }
 
 
-  function isCaught( subject ) {
+  function isHandled( subject ) {
     return length(subject[ _CATCH ]) > 0;
   }
 
 
   function filter( arr , testState ) {
     return arr.filter(function( promise ) {
-      return promise[STATE] === testState;
+      return (/*!isPromise( promise ) ||*/ (promise[STATE] === testState));
     });
   }
 

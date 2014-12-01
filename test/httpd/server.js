@@ -15,7 +15,13 @@
       }
     })
     .rewrite({
-      pattern: /^\/wee-promise.js$/i,
+      pattern: /^\/cloud\.png$/i,
+      handle: function( req , res , match ) {
+        return '/test/httpd/cloud.png';
+      }
+    })
+    .rewrite({
+      pattern: /^\/wee-promise\.js$/i,
       handle: function( req , res , match ) {
         return '/index.js';
       }
@@ -24,6 +30,12 @@
       pattern: /^\/test\.js$/i,
       handle: function( req , res , match ) {
         return '/test/httpd/test.js';
+      }
+    })
+    .rewrite({
+      pattern: /^\/recursive-load\.js$/i,
+      handle: function( req , res , match ) {
+        return '/test/httpd/recursive-load.js';
       }
     })
     .rewrite({

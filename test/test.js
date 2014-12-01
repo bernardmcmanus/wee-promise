@@ -34,6 +34,98 @@
 
     describe(( name ).h1 , function() {
 
+      /*it( 'when a single promise chain is rejected WITH a catch handler on the child' , function( done ) {
+
+        var route = [],
+        routeFinal = [ 0 , 1 , 2 ];
+
+        new Promise(function( resolve , reject ) {
+          route.push( 0 );
+          resolve();
+        })
+        .then(function() {
+          return new Promise(function( resolve , reject ) {
+            route.push( 1 );
+            throw new Error( 'error' );
+            //reject(new Error( 'error' ));
+          })
+          .then(function() {
+            console.log('child-then');
+            return true;
+          })
+          .then(function() {
+            console.log('child-then-2');
+            return 2;
+          })
+          .then(function() {
+            console.log('child-then-3');
+            return 3;
+          })
+          .then(function() {
+            console.log('child-then-4');
+            return 4;
+          })
+          .catch(function() {
+            console.log('child-catch');
+            route.push( 2 );
+            return false;
+          })
+          .catch(function() {
+            console.log('child-catch-2');
+            return 2;
+          })
+          .catch(function() {
+            console.log('child-catch-3');
+            return 3;
+          })
+          .catch(function() {
+            console.log('child-catch-4');
+            return 4;
+          });
+        })
+        .then(function( args ) {
+          log(args);
+          expect( route ).to.eql( routeFinal );
+          expect( args ).to.equal( false );
+          done();
+        })
+        .catch(function( err ) {
+          console.log('parent-catch');
+          done( err );
+        });
+      });*/
+
+      /*it( 'should pass resolved args along promise chains (asynchronous)' , function( done ) {
+
+        var promises = [ 0 , 1 , 2 ].map(function( i ) {
+          return new Promise(function( resolve ) {
+            async(function() {
+              resolve( i + '-a' );
+            });
+          })
+          .then(function( val ) {
+            return val + 'b';
+          })
+          .then(function( val ) {
+            return new Promise(function( resolve ) {
+              async(function() {
+                resolve( val + 'c' );
+              });
+            });
+          });
+        });
+
+        Promise.all( promises ).then(function( result ) {
+          result.forEach(function( arg , i ) {
+            expect( arg ).to.equal( i + '-abc' );
+          });
+          done();
+        })
+        .catch( done );
+      });*/
+
+      //return;
+
       /*describe( 'Special Cases' , function() {
 
         it( 'should fail recursively until maxAttempts is reached' , function( done ) {
