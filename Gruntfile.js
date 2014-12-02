@@ -1,6 +1,9 @@
 module.exports = function( grunt ) {
 
 
+  var exec = require( 'child_process' ).exec;
+
+
   var Build = [
     'index.js'
   ];
@@ -52,7 +55,7 @@ module.exports = function( grunt ) {
 
     uglify: {
       options: {
-        banner: '/*! <%= pkg.name %> - <%= pkg.version %> - <%= pkg.author.name %> - <%= grunt.config.get( \'git-hash\' ) %> - <%= grunt.template.today("yyyy-mm-dd") %> */\n'
+        banner: '/*! <%= pkg.name %> - <%= pkg.version %> - <%= pkg.author.name %> - <%= grunt.config.get( \'git-branch\' ) %> - <%= grunt.config.get( \'git-hash\' ) %> - <%= grunt.template.today("yyyy-mm-dd") %> */\n'
       },
       release: {
         files: {
@@ -73,7 +76,7 @@ module.exports = function( grunt ) {
   .forEach( grunt.loadNpmTasks );
 
 
-  grunt.registerTask( 'createHash' , function() {
+  grunt.registerTask( 'getHash' , function() {
 
     grunt.task.requires( 'git-describe' );
 
@@ -95,11 +98,27 @@ module.exports = function( grunt ) {
   });
 
 
+  grunt.registerTask( 'getBranch' , function() {
+    var done = this.async();
+    exec( 'git status' , function( err , stdout , stderr ) {
+      if (!err) {
+        var branch = stdout
+          .split( '\n' )
+          .shift()
+          .replace( /on\sbranch\s/i , '' );
+        grunt.config.set( 'git-branch' , branch );
+      }
+      done();
+    });
+  });
+
+
   grunt.registerTask( 'always' , [
     'jshint',
     'clean',
     'git-describe',
-    'createHash',
+    'getHash',
+    'getBranch',
     'replace'
   ]);
 
