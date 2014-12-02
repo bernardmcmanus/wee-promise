@@ -1,9 +1,10 @@
-(function( WeePromise , ES6Promise ) {
+(function( WeePromise , ES6Promise , NativePromise ) {
 
 
   [
     WeePromise,
-    ES6Promise
+    ES6Promise,
+    NativePromise
   ]
   .forEach(function( Promise , i ) {
 
@@ -54,10 +55,12 @@
           });
         })
         .then(function() {
-            console.log('child-then');
+          //log(p);
+          console.log('child-then');
           return img;
         })
         .catch(function() {
+          //log(p);
           if (imgObj.attempts < 3) {
             console.log('try again');
             return load( imgObj );
@@ -78,13 +81,12 @@
           });
         });
         p.then(function() {
+          //log(p);
           console.log('child-then');
           return img;
-        })
-        .catch(function() {
-          if (p.__TESTFLAG) {
-            console.log(p);
-          }
+        });
+        p.catch(function() {
+          //log(p);
           if (imgObj.attempts < 3) {
             console.log('try again');
             return load( imgObj );
@@ -112,7 +114,7 @@
     setTimeout( callback , ( delay || 1 ));
   }
   
-}( WeePromise , ES6Promise.Promise ));
+}( WeePromise , ES6Promise.Promise , window.Promise ));
 
 
 

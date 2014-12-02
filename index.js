@@ -16,14 +16,14 @@
 
 
   var UNDEFINED;
-  var PRIVATE = '__';
+  var PRIVATE = '$$';
   var PROTOTYPE = 'prototype';
-  var STATE = 'state';
-  var ARGS = 'args';
   var ALWAYS = 'always';
   var THEN = 'then';
   var CATCH = 'catch';
-  var PASS = PRIVATE + 'pass';
+  var _PASS = PRIVATE + 'pass';
+  var _STATE = PRIVATE + 'state';
+  var _ARGS = PRIVATE + 'args';
   var _ALWAYS = PRIVATE + ALWAYS;
   var _THEN = PRIVATE + THEN;
   var _CATCH = PRIVATE + CATCH;
@@ -43,8 +43,8 @@
 
     var that = this;
 
-    // that[STATE] = 0;
-    // that[ARGS] = [];
+    // that[_STATE] = 0;
+    // that[_ARGS] = [];
     // that[_READY] = false;
     // that[_HANDLED] = false;
     // that[_HANDLED_SELF] = false;
@@ -86,13 +86,13 @@
     var handlers = that[type];
     var len = length( handlers );
     var i = 0;
-    var returned;
+    var state = STATEMAP[type], returned;
 
     return trycatch( that , function() {
 
       while (i < len) {
 
-        if (STATEMAP[type] && that[STATE] === STATEMAP[type] && that[_CHILD] && that[_HANDLED]) {
+        if (state && that[_STATE] === state && that[_CHILD] && that[_HANDLED]) {
           
           handlers = !that[_HANDLED_SELF] || that[_READY] ? [] : handlers.slice( -1 );
           i = len - 1;
@@ -102,19 +102,22 @@
           }
         }
 
-        returned = ( STATEMAP[type] ? handlers.shift() : handlers[i] ).apply( UNDEFINED , [ args ]);
-        args = STATEMAP[type] ? returned : args;
+        returned = ( state ? handlers.shift() : handlers[i] ).apply( UNDEFINED , [ args ]);
+        args = state ? returned : args;
 
         if (isPromise( returned )) {
-          return that[ PASS ]( returned );
+          return that[ _PASS ]( returned );
         }
-        else if (type === _CATCH) {
-          if (that[_HANDLED] && that[_CHILD]) {
-            that[STATE] = STATEMAP[_THEN];
-            that[ARGS] = [ returned ];
-            return that
-              [ _EXEC ]( _THEN , returned )
-              [ _EXEC ]( _ALWAYS , returned );
+        else if (type == _CATCH) {
+          if (that[_HANDLED]) {
+            state = STATEMAP[_THEN];
+            if (that[_CHILD]) {
+              that[_STATE] = state;
+              that[_ARGS] = [ returned ];
+              return that
+                [ _EXEC ]( _THEN , returned )
+                [ _EXEC ]( _ALWAYS , returned );
+            }
           }
           break;
         }
@@ -122,12 +125,8 @@
         i++;
       }
 
-      that[ARGS] = that[STATE] ? that[ARGS] : [ args ];
-      that[STATE] = STATEMAP[type] || that[STATE];
-
-      if (type === _CATCH && that[_HANDLED]) {
-        that[STATE] = STATEMAP[_THEN];
-      }
+      that[_ARGS] = that[_STATE] ? that[_ARGS] : [ args ];
+      that[_STATE] = state || that[_STATE];
 
       return that;
 
@@ -152,7 +151,7 @@
   };
 
 
-  WeePromise[ PROTOTYPE ][ PASS ] = function( promise ) {
+  WeePromise[ PROTOTYPE ][ _PASS ] = function( promise ) {
     
     var that = this;
     
@@ -163,7 +162,7 @@
       promise[key] = (promise[_HANDLED_SELF] ? promise[key].concat( that[key] ) : that[key]);
     });
 
-    that[ARGS] = promise;
+    that[_ARGS] = promise;
 
     return promise;
   };
@@ -201,7 +200,7 @@
       }
       else {
         async(function() {
-          if (!context[STATE]) {
+          if (!context[_STATE]) {
             context
             [ _EXEC ]( type , args )
             [ _EXEC ]( _ALWAYS , args );
@@ -219,7 +218,7 @@
     return function() {
 
       arr = arr.map(function( promise , i ) {
-        return isPromise( promise[ARGS] ) ? promise[ARGS] : promise;
+        return isPromise( promise[_ARGS] ) ? promise[_ARGS] : promise;
       });
       
       var resolved = filter( arr , 1 );
@@ -228,14 +227,14 @@
       if (length( resolved ) === test) {
 
         var args = resolved.map(function( promise ) {
-          return promise[ARGS][0];
+          return promise[_ARGS][0];
         });
         
         resolve( single ? args[0] : args );
       }
       else if (length( rejected ) > 0) {
         reject(
-          rejected[0][ARGS][0]
+          rejected[0][_ARGS][0]
         );
       }
     };
@@ -249,7 +248,7 @@
 
   function filter( arr , testState ) {
     return arr.filter(function( promise ) {
-      return (/*!isPromise( promise ) ||*/ (promise[STATE] === testState));
+      return (/*!isPromise( promise ) ||*/ (promise[_STATE] === testState));
     });
   }
 

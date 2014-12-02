@@ -1,7 +1,9 @@
 module.exports = function( grunt ) {
 
 
+  var fs = require( 'fs' );
   var exec = require( 'child_process' ).exec;
+  var colors = require( 'colors' );
 
 
   var Build = [
@@ -77,18 +79,14 @@ module.exports = function( grunt ) {
 
 
   grunt.registerTask( 'getHash' , function() {
-
     grunt.task.requires( 'git-describe' );
-
     var rev = grunt.config.get( 'git-version' );
     var matches = rev.match( /(\-{0,1})+([A-Za-z0-9]{7})+(\-{0,1})/ );
-
     var hash = matches
       .filter(function( match ) {
         return match.length === 7;
       })
       .pop();
-
     if (matches && matches.length > 1) {
       grunt.config.set( 'git-hash' , hash );
     }
@@ -113,6 +111,19 @@ module.exports = function( grunt ) {
   });
 
 
+  grunt.registerTask( 'build-describe' , function() {
+    var pkg = grunt.config.get( 'pkg' );
+    var name = pkg.name + '-' + pkg.version + '.min.js';
+    var bytesInit = Build.reduce(function( prev , current ) {
+      return prev + fs.statSync( current ).size;
+    }, 0);
+    var bytesFinal = fs.statSync( name ).size;
+    var kbInit = (Math.round( bytesInit / 10 ) / 100);
+    var kbFinal = (Math.round( bytesFinal / 10 ) / 100).toString();
+    console.log('File ' + name.cyan + ' created: ' + (kbInit + ' kB').green + ' \u2192 ' + (kbFinal + ' kB').green);
+  });
+
+
   grunt.registerTask( 'always' , [
     'jshint',
     'clean',
@@ -125,7 +136,8 @@ module.exports = function( grunt ) {
 
   grunt.registerTask( 'default' , [
     'always',
-    'uglify'
+    'uglify',
+    'build-describe'
   ]);
 };
 

@@ -4,6 +4,7 @@
 
 
   var util = require( 'util' );
+  var http = require( 'http' );
   var WeePromise = require( '../index.js' );
   var ES6_Promise = require( 'es6-promise' ).Promise;
   var chai = require( 'chai' );
@@ -11,14 +12,18 @@
   var expect = chai.expect;
 
 
-  var http = require( 'http' );
-  var url = require( 'url' );
-  var querystring = require( 'querystring' );
-
-
-  colors.setTheme({
-    h1: 'cyan'
-  });
+  function theme( name , text ) {
+    text = text.toString();
+    switch (name) {
+      case 'h1':
+        return text.bold.underline.white;
+      case 'h2':
+      case 'h3':
+        return text.magenta;
+      default:
+        return text;
+    }
+  }
 
 
   [
@@ -32,179 +37,9 @@
     var name = args[1];
     
 
-    describe(( name ).h1 , function() {
+    describe(theme( 'h1' , name ) , function() {
 
-      /*it( 'when a single promise chain is rejected WITH a catch handler on the child' , function( done ) {
-
-        var route = [],
-        routeFinal = [ 0 , 1 , 2 ];
-
-        new Promise(function( resolve , reject ) {
-          route.push( 0 );
-          resolve();
-        })
-        .then(function() {
-          return new Promise(function( resolve , reject ) {
-            route.push( 1 );
-            throw new Error( 'error' );
-            //reject(new Error( 'error' ));
-          })
-          .then(function() {
-            console.log('child-then');
-            return true;
-          })
-          .then(function() {
-            console.log('child-then-2');
-            return 2;
-          })
-          .then(function() {
-            console.log('child-then-3');
-            return 3;
-          })
-          .then(function() {
-            console.log('child-then-4');
-            return 4;
-          })
-          .catch(function() {
-            console.log('child-catch');
-            route.push( 2 );
-            return false;
-          })
-          .catch(function() {
-            console.log('child-catch-2');
-            return 2;
-          })
-          .catch(function() {
-            console.log('child-catch-3');
-            return 3;
-          })
-          .catch(function() {
-            console.log('child-catch-4');
-            return 4;
-          });
-        })
-        .then(function( args ) {
-          log(args);
-          expect( route ).to.eql( routeFinal );
-          expect( args ).to.equal( false );
-          done();
-        })
-        .catch(function( err ) {
-          console.log('parent-catch');
-          done( err );
-        });
-      });*/
-
-      /*it( 'should pass resolved args along promise chains (asynchronous)' , function( done ) {
-
-        var promises = [ 0 , 1 , 2 ].map(function( i ) {
-          return new Promise(function( resolve ) {
-            async(function() {
-              resolve( i + '-a' );
-            });
-          })
-          .then(function( val ) {
-            return val + 'b';
-          })
-          .then(function( val ) {
-            return new Promise(function( resolve ) {
-              async(function() {
-                resolve( val + 'c' );
-              });
-            });
-          });
-        });
-
-        Promise.all( promises ).then(function( result ) {
-          result.forEach(function( arg , i ) {
-            expect( arg ).to.equal( i + '-abc' );
-          });
-          done();
-        })
-        .catch( done );
-      });*/
-
-      //return;
-
-      /*describe( 'Special Cases' , function() {
-
-        it( 'should fail recursively until maxAttempts is reached' , function( done ) {
-
-          var maxAttempts = 3;
-
-          loadImages( overlays() ).then(function( args ) {
-            log(args);
-            done();
-          })
-          .catch( done );
-          
-          function overlays() {
-            var cloud = 'http://s3-us-west-2.amazonaws.com/s.cdpn.io/141981/cloud.png';
-            return {
-              image0: { src: cloud + '?r=' + uts() },
-              image1: { src: cloud + 'FAIL?r=' + uts() },
-              image2: { src: cloud + '?r=' + uts() },
-              image3: { src: cloud + '?r=' + uts() }
-            };
-          }
-
-          function uts() {
-            return Date.now() + '.' + Math.floor( Math.random() * 100000 );
-          }
-
-          function loadImages( srcObj ) {
-
-            function load( imgObj , key ) {
-              var statusCode, img = '\u2713\u0020success!';
-              var promise = new Promise(function( resolve , reject ) {
-                log('GET -> ' + key);
-                http.get( imgObj.src )
-                .on( 'response' , function( res ) {
-                  statusCode = parseInt( res.statusCode , 10 );
-                  res.on( 'data' , function() {} );
-                  res.on( 'end' , function() {
-                    if (statusCode === 200) {
-                      resolve();
-                    }
-                    else {
-                      reject();
-                    }
-                  });
-                })
-                .on( 'error' , function() {
-                  reject();
-                });
-              })
-              .then(function() {
-                return img;
-              })
-              .catch(function() {
-                //log(promise);
-                imgObj.attempts++;
-                if (imgObj.attempts <= maxAttempts) {
-                  log(key + ' failed, attempts = ' + imgObj.attempts);
-                  return load( imgObj , key );
-                }
-                return '\u2716\u0020error!';
-              });
-              return promise;
-            }
-
-            return Promise.all(
-              Object.keys( srcObj ).map(function( key ) {
-                srcObj[key].attempts = 0;
-                return load( srcObj[key] , key );
-              })
-            );
-          }
-
-        });
-
-      });
-
-      return;*/
-
-      describe( 'Constructor' , function() {
+      describe(theme( 'h2' , 'Constructor' ) , function() {
         it( 'should fail silently when an error is thrown' , function( done ) {
           new Promise(function( resolve , reject ) {
             async( done );
@@ -213,7 +48,7 @@
         });
       });
 
-      describe( '#then()' , function() {
+      describe(theme( 'h2' , '#then()' ) , function() {
         it( 'should do nothing when resolve is called twice' , function( done ) {
           new Promise(function( resolve , reject ) {
             resolve();
@@ -383,7 +218,7 @@
         });
       });
 
-      describe( '#catch()' , function() {
+      describe(theme( 'h2' , '#catch()' ) , function() {
         it( 'should do nothing when reject is called twice' , function( done ) {
           new Promise(function( resolve , reject ) {
             reject();
@@ -465,9 +300,9 @@
         });
       });
 
-      describe( '#all()' , function() {
+      describe(theme( 'h2' , '#all()' ) , function() {
 
-        describe( '#then()' , function() {
+        describe(theme( 'h3' , '#then()' ) , function() {
           it( 'should be executed once all promises are resolved (asynchronous)' , function( done ) {
             all_then( Promise , false , function( result ) {
               done();
@@ -666,7 +501,7 @@
           });
         });
 
-        describe( '#catch()' , function() {
+        describe(theme( 'h3' , '#catch()' ) , function() {
           it( 'should be executed if a promise is rejected (asynchronous)' , function( done ) {
             all_catch( Promise , false , function( result ) {
               done();
@@ -720,9 +555,9 @@
         });
       });
 
-      describe( '#race()' , function() {
+      describe(theme( 'h2' , '#race()' ) , function() {
 
-        describe( '#then()' , function() {
+        describe(theme( 'h3' , '#then()' ) , function() {
           it( 'should be executed once the first promise is resolved (asynchronous)' , function( done ) {
             race_then( Promise , false , function( result ) {
               done();
@@ -778,7 +613,7 @@
         });
       });
 
-      describe( 'Functional Tests' , function() {
+      describe(theme( 'h2' , 'Functional Tests' ) , function() {
 
         it( 'when a single promise is rejected' , function( done ) {
           new Promise(function( resolve , reject ) {
@@ -1047,6 +882,74 @@
             done();
           })
           .catch( done );
+        });
+
+        it( 'should fail recursively until maxAttempts is reached' , function( done ) {
+
+          var attempts = 0,
+          maxAttempts = 3,
+          result = [ true , false , true , true ];
+
+          loadImages( overlays() ).then(function( args ) {
+            expect( args ).to.eql( result );
+            done();
+          })
+          .catch( done );
+          
+          function overlays() {
+            var cloud = 'http://s3-us-west-2.amazonaws.com/s.cdpn.io/141981/cloud.png';
+            return {
+              image0: { src: cloud + '?r=' + uts() },
+              image1: { src: cloud + 'FAIL?r=' + uts() },
+              image2: { src: cloud + '?r=' + uts() },
+              image3: { src: cloud + '?r=' + uts() }
+            };
+          }
+
+          function uts() {
+            return Date.now() + '.' + Math.floor( Math.random() * 100000 );
+          }
+
+          function loadImages( srcObj ) {
+
+            function load( imgObj , key ) {
+              return new Promise(function( resolve , reject ) {
+                http.get( imgObj.src )
+                .on( 'response' , function( res ) {
+                  var statusCode = parseInt( res.statusCode , 10 );
+                  res.on( 'data' , function() {} );
+                  res.on( 'end' , function() {
+                    if (statusCode === 200) {
+                      resolve();
+                    }
+                    else {
+                      reject();
+                    }
+                  });
+                })
+                .on( 'error' , function() {
+                  reject();
+                });
+              })
+              .then(function() {
+                return true;
+              })
+              .catch(function() {
+                imgObj.attempts++;
+                if (imgObj.attempts <= maxAttempts) {
+                  return load( imgObj , key );
+                }
+                return false;
+              });
+            }
+
+            return Promise.all(
+              Object.keys( srcObj ).map(function( key ) {
+                srcObj[key].attempts = 0;
+                return load( srcObj[key] , key );
+              })
+            );
+          }
         });
       });
     });
