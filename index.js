@@ -7,7 +7,6 @@
   }
   else {
     global.WeePromise = WeePromise;
-    global.Promise = global.Promise || WeePromise;
   }
 
 }(function( setTimeout ) {
