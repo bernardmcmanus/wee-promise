@@ -2,24 +2,43 @@
 
   'use strict';
 
-  console.$disable = function() {
+  console.$off = function() {
     console.log = function() {};
     console.error = function() {};
   };
-  console.$enable = function() {
-    console.log = console._log;
-    console.error = console._error;
+  console.$on = function() {
+    delete console.log;
+    delete console.error;
   };
-  console._log = console.log;
-  console._error = console.error;
 
-  console.$disable();
+  // console.$off();
+
+  var autoscrollTimeout, autoscroll = true;
+
+  $(window).on( 'scroll' , function( e ) {
+    clearTimeout( autoscrollTimeout );
+    autoscroll = false;
+    autoscrollTimeout = setTimeout(function() {
+      autoscroll = true;
+    }, 500);
+  });
+
+  afterEach(function( done ) {
+    if (autoscroll && !window._phantom) {
+      $(document).on( 'scroll' , function once( e ) {
+        e.stopPropagation();
+        $(document).off( 'scroll' , once );
+      });
+      $(window).scrollTop( $('#mocha').height() );
+    }
+    done();
+  });
 
   [
     [ WeePromise , 'WeePromise (default provider)' ],
-    /*[ WeePromise , 'WeePromise (observer provider)' , briskit.providers.observer ],
+    [ WeePromise , 'WeePromise (observer provider)' , briskit.providers.observer ],
     [ WeePromise , 'WeePromise (worker provider)' , briskit.providers.worker ],
-    [ WeePromise , 'WeePromise (timeout provider)' , briskit.providers.timeout ],*/
+    [ WeePromise , 'WeePromise (timeout provider)' , briskit.providers.timeout ],
     [ ES6Promise.Promise , 'ES6Promise' ]
   ]
   .forEach(function( args ) {
@@ -96,8 +115,6 @@
         });
         it( 'should allow for promise chaining (asynchronous)' , function( done ) {
 
-          console.$enable();
-
           var start = Date.now();
           var delay = 100;
           var tolerance = 50;
@@ -132,7 +149,6 @@
           })
           .catch( done );
         });
-return;
         it( 'should allow for promise chaining (synchronous)' , function( done ) {
           new Promise(function( resolve ) {
             resolve();
@@ -216,8 +232,6 @@ return;
         });
       });
 
-return;
-
       describe( '#catch()' , function() {
         it( 'should do nothing when reject is called twice' , function( done ) {
           new Promise(function( resolve , reject ) {
@@ -277,6 +291,24 @@ return;
             done();
           });
         });
+        it( 'should rescue a rejected promise' , function( done ) {
+          new Promise(function( resolve , reject ) {
+            resolve();
+          })
+          .then(function() {
+            return new Promise(function( resolve ) {
+              throw new Error( 'error1' );
+            })
+            .catch(function( err ) {
+              return err;
+            });
+          })
+          .then(function( err ) {
+            expect( err.message ).to.equal( 'error1' );
+            expect( err ).to.be.an.instanceOf( Error );
+            done();
+          });
+        });
         it( 'should receive the error thrown in the resolver function' , function( done ) {
           new Promise(function( resolve , reject ) {
             throw new Error( 'error' );
@@ -300,7 +332,7 @@ return;
         });
       });
 
-      describe( '#all()' , function() {
+      /*describe( '#all()' , function() {
 
         describe( '#then()' , function() {
           it( 'should be executed once all promises are resolved (asynchronous)' , function( done ) {
@@ -611,7 +643,7 @@ return;
             .catch( done );
           });
         });
-      });
+      });*/
 
       describe( 'Functional Tests' , function() {
 
@@ -681,6 +713,8 @@ return;
           })
           .catch( done );
         });
+
+return;
 
         it( 'when a promise list WITHOUT individual catch handlers is rejected' , function( done ) {
 
@@ -911,11 +945,7 @@ return;
           }
 
           function loadImages( srcObj ) {
-
             function load( imgObj , key ) {
-              /*return new Promise(function( resolve , reject ) {
-                $.ajax({ url: imgObj.src }).success( resolve ).error( reject );
-              })*/
               fakeHttp.get( Promise , imgObj.src ).then(function() {
                 return true;
               })
@@ -927,7 +957,6 @@ return;
                 return false;
               });
             }
-
             return Promise.all(
               Object.keys( srcObj ).map(function( key ) {
                 srcObj[key].attempts = 0;

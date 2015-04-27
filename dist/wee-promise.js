@@ -1,4 +1,4 @@
-/*! wee-promise - 0.3.0 - Bernard McManus -  -  - 2015-04-26 */
+/*! wee-promise - 0.3.0 - Bernard McManus - nightly - g8aa544 - 2015-04-27 */
 
 /*! briskit - 0.2.0 - Bernard McManus - 5913d2b - 2015-04-26 */
 
@@ -145,10 +145,6 @@ window.WeePromise = (function( briskit ) {
 
   'use strict';
 
-  /*if (typeof angular != 'undefined') {
-    briskit.use( briskit.providers.timeout );
-  }*/
-
   var UNDEFINED;
   // var PROTOTYPE = 'prototype';
   /*var ALWAYS = 'always';
@@ -167,20 +163,20 @@ window.WeePromise = (function( briskit ) {
   var _HANDLED = '$$handled';
   var _HANDLED_SELF = _HANDLED + 'Self';*/
 
-  var STATEMAP = {};
+  /*var STATEMAP = {};
   STATEMAP['$$then'] = 1;
-  STATEMAP['$$catch'] = -1;
+  STATEMAP['$$catch'] = -1;*/
 
   function Promise( resolver ) {
 
     var that = this;
-    var args;
+    // var args;
 
     that._state = 0;
     that._queue = [];
-    that._subscribers = [];
-    // that._args = [];
-    Object.defineProperty( that , '_args' , {
+    that._watchers = [];
+    that._args = UNDEFINED;
+    /*Object.defineProperty( that , '_args' , {
       get: function() {
         return args;
       },
@@ -190,15 +186,18 @@ window.WeePromise = (function( briskit ) {
           // args = [ val ];
         }
       }
-    });
+    });*/
 
     briskit(function() {
-      trycatch( that , function() {
+      that._args = trycatch( that , function() {
         resolver(
           getPromiseArg( that , 1 ),
           getPromiseArg( that , -1 )
         );
       });
+      if (that._state < 0) {
+        that.__flush();
+      }
     });
   }
 
@@ -209,15 +208,31 @@ window.WeePromise = (function( briskit ) {
     catch: function( func ) {
       return this.__enqueue({ state: -1, func: func });
     },
-    _setState: function( state , args ) {
+    /*_setState: function( state , args ) {
       var that = this;
       if (state != UNDEFINED) {
         that._state = state
       }
       that._args = args;
+    },*/
+    _watch: function( notifier ) {
+      notifier._watchers.push( this );
     },
-    _subscribe: function( watcher ) {
-      this._subscribers.push( watcher );
+    _notify: function() {
+      var that = this;
+      var watchers = that._watchers;
+      var watcher;
+      while (length( watchers )) {
+        watcher = watchers.shift();
+        watcher._args = that._args;
+        watcher.__flush();
+      }
+      /*var watchers = that._watchers;
+      forEach( watchers , function( watcher ) {
+        // console.log(watcher);
+        watcher._args = that._args;
+        watcher.__flush();
+      });*/
     },
     __enqueue: function( block ) {
       this._queue.push( block );
@@ -227,19 +242,20 @@ window.WeePromise = (function( briskit ) {
       var that = this;
       var block = getNextOfState( that._queue , that._state );
       var result;
-      console.log(block);
+      // console.log(block);
       // console.log(that._args);
       if (block) {
-        trycatch( that , block.func );
-        // console.log(that._args);
-        /*if (isA( result , Promise )) {
-          that._args = result._args;
+        result = trycatch( that , block.func );
+        if (is( result , Promise )) {
+          that._watch( result );
         }
         else {
           that._args = result;
-        }*/
-        // console.log(that._args);
-        that.__flush();
+          that.__flush();
+        }
+      }
+      else {
+        that._notify();
       }
     }
   };
@@ -248,27 +264,22 @@ window.WeePromise = (function( briskit ) {
     return function( args ) {
       // briskit(function() {
         if (!context._state) {
-          // context._args = args;
-          // context._state = state;
-          context._setState( state , args );
+          context._args = args;
+          context._state = state;
           context.__flush();
         }
       // });
     };
   }
 
-  function trycatch( context , action ) {
-    var state, func = action;
-    if (typeof action == 'object') {
-      state = 1;
-      func = action.func;
-    }
+  function trycatch( context , func ) {
     try {
-      context._setState( state , func( context._args ));
+      return func( context._args );
     }
     catch ( err ) {
-      console.error( err.stack );
-      context._setState( -1 , err );
+      // console.error( err.stack );
+      context._state = -1;
+      return err;
     }
   }
 
@@ -289,6 +300,10 @@ window.WeePromise = (function( briskit ) {
   function length( subject ) {
     return subject.length;
   }
+
+  /*function forEach( subject , callback ) {
+    subject.forEach( callback );
+  }*/
 
   return Promise;
 
@@ -443,10 +458,6 @@ window.WeePromise = (function( briskit ) {
 
   function isPromise( subject ) {
     return subject instanceof Promise;
-  }
-
-  function forEach( subject , callback ) {
-    subject.forEach( callback );
   }
   
 }( briskit ));
