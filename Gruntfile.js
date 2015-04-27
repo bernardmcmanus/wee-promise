@@ -1,15 +1,13 @@
 module.exports = function( grunt ) {
 
-
   var fs = require( 'fs' );
-  var exec = require( 'child_process' ).exec;
+  var cp = require( 'child_process' );
   var colors = require( 'colors' );
 
-
-  var Build = [
+  var src = [
+    'node_modules/briskit/dist/briskit.js',
     'index.js'
   ];
-
 
   grunt.initConfig({
 
@@ -27,7 +25,7 @@ module.exports = function( grunt ) {
     },
 
     clean: {
-      all: [ '<%= pkg.name %>-*.js' ]
+      all: [ 'dist' ]
     },
 
     replace: [{
@@ -36,10 +34,6 @@ module.exports = function( grunt ) {
           {
             match: /\"version\".*?\".*\"/i,
             replacement: '\"version\": \"<%= pkg.version %>\"'
-          },
-          {
-            match: /\"main\".*?\".*\"/i,
-            replacement: '\"main\": \"<%= pkg.name %>-<%= pkg.version %>.min.js\"'
           }
         ]
       },
@@ -55,30 +49,76 @@ module.exports = function( grunt ) {
       ]
     }],
 
+    'release-describe': {
+      build: {
+        src: 'dist/<%= pkg.name %>.js',
+        dest: 'dist/<%= pkg.name %>.min.js'
+      }
+    },
+
+    concat: {
+      options: {
+        banner: '/*! <%= pkg.name %> - <%= pkg.version %> - <%= pkg.author.name %> - <%= grunt.config.get( \'git-branch\' ) %> - <%= grunt.config.get( \'git-hash\' ) %> - <%= grunt.template.today("yyyy-mm-dd") %> */\n\n'
+      },
+      release: {
+        src: src,
+        dest: 'dist/<%= pkg.name %>.js'
+      }
+    },
+
     uglify: {
       options: {
         banner: '/*! <%= pkg.name %> - <%= pkg.version %> - <%= pkg.author.name %> - <%= grunt.config.get( \'git-branch\' ) %> - <%= grunt.config.get( \'git-hash\' ) %> - <%= grunt.template.today("yyyy-mm-dd") %> */\n'
       },
       release: {
-        files: {
-          '<%= pkg.name %>-<%= pkg.version %>.min.js': Build
+        src: 'dist/<%= pkg.name %>.js',
+        dest: 'dist/<%= pkg.name %>.min.js'
+      }
+    },
+
+    watch: {
+      debug: {
+        files: [ '*.js' , 'test/*' ],
+        options: { interrupt: true },
+        tasks: [ 'clean' , 'concat' , 'mocha_phantomjs' ]
+      },
+    },
+
+    connect: {
+      server: {
+        options: {
+          port: 9001,
+          base: '.',
+          hostname: '0.0.0.0',
         }
+      }
+    },
+
+    mocha_phantomjs: {
+      test: {
+        options: { urls: [
+          '/test/index.html'
+        ]}
       }
     }
   });
 
+  grunt.loadTasks( 'tasks' );
 
   [
     'grunt-contrib-jshint',
     'grunt-contrib-clean',
     'grunt-git-describe',
     'grunt-replace',
-    'grunt-contrib-uglify'
+    'grunt-contrib-watch',
+    'grunt-contrib-concat',
+    'grunt-contrib-uglify',
+    'grunt-contrib-connect',
+    'grunt-mocha-phantomjs'
   ]
   .forEach( grunt.loadNpmTasks );
 
-
-  grunt.registerTask( 'getHash' , function() {
+  grunt.registerTask( 'git:hash' , function() {
     grunt.task.requires( 'git-describe' );
     var rev = grunt.config.get( 'git-version' );
     var matches = rev.match( /(\-{0,1})+([A-Za-z0-9]{7})+(\-{0,1})/ );
@@ -95,10 +135,9 @@ module.exports = function( grunt ) {
     }
   });
 
-
-  grunt.registerTask( 'getBranch' , function() {
+  grunt.registerTask( 'git:branch' , function() {
     var done = this.async();
-    exec( 'git status' , function( err , stdout , stderr ) {
+    cp.exec( 'git status' , function( err , stdout , stderr ) {
       if (!err) {
         var branch = stdout
           .split( '\n' )
@@ -110,52 +149,49 @@ module.exports = function( grunt ) {
     });
   });
 
-
-  grunt.registerTask( 'build-describe' , function() {
-    var pkg = grunt.config.get( 'pkg' );
-    var name = pkg.name + '-' + pkg.version + '.min.js';
-    var bytesInit = Build.reduce(function( prev , current ) {
-      return prev + fs.statSync( current ).size;
-    }, 0);
-    var bytesFinal = fs.statSync( name ).size;
-    var kbInit = (Math.round( bytesInit / 10 ) / 100);
-    var kbFinal = (Math.round( bytesFinal / 10 ) / 100).toString();
-    console.log('File ' + name.cyan + ' created: ' + (kbInit + ' kB').green + ' \u2192 ' + (kbFinal + ' kB').green);
-  });
-
+  /*grunt.registerTask( 'test' , function() {
+    var done = this.async();
+    new Promise(function( resolve ) {
+      var task = cp.spawn( 'npm' , [ 'test' ]);
+      resolve( task.stdout );
+    })
+    .then(function( readable ) {
+      readable.pipe( process.stdout );
+      return new Promise(function( resolve , reject ) {
+        readable.on( 'end' , resolve );
+        readable.on( 'error' , reject );
+      });
+    })
+    .then( done )
+    .catch( grunt.fail.fatal );
+  });*/
 
   grunt.registerTask( 'always' , [
     'jshint',
     'clean',
     'git-describe',
-    'getHash',
-    'getBranch',
-    'replace'
+    'git:hash',
+    'git:branch'
   ]);
 
+  grunt.registerTask( 'debug' , [
+    'clean',
+    'concat',
+    'test',
+    'watch'
+  ]);
+
+  grunt.registerTask( 'test' , [
+    'connect',
+    'mocha_phantomjs'
+  ]);
 
   grunt.registerTask( 'default' , [
     'always',
+    'concat',
     'uglify',
-    'build-describe'
+    'test',
+    'replace',
+    'release-describe'
   ]);
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

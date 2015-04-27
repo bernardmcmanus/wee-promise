@@ -1,24 +1,29 @@
 {
   "name": "wee-promise",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "an ultra light promises polyfill",
-  "main": "wee-promise-0.2.1.min.js",
+  "main": "dist/wee-promise.js",
   "scripts": {
     "httpd": "supervisor ./test/httpd/server.js",
-    "test": "clear; mocha ./test/test.js"
+    "test": "mocha ./test/test.js"
+  },
+  "dependencies": {
+    "briskit": "~0.2.0"
   },
   "devDependencies": {
-    "httpd-node": "git://github.com/elnarddogg/httpd-node.git#cb870e4de7dde3e0b55880e9c9865b00b4cf607f",
-    "mocha": "1.21.4",
-    "chai": "1.9.1",
-    "es6-promise": ">=2.0.0",
+    "fs-extra": "0.9.1",
+    "es6-promise": ">=2.0.1",
     "colors": "*",
     "grunt": "~0.4.2",
     "grunt-contrib-jshint": "~0.6.3",
+    "grunt-contrib-concat": "~0.5.1",
     "grunt-contrib-uglify": ">=0.5.0",
     "grunt-contrib-clean": ">=0.4.1",
     "grunt-git-describe": "~2.0.2",
-    "grunt-replace": ">=0.7.7"
+    "grunt-contrib-watch": "~0.6.1",
+    "grunt-replace": ">=0.7.7",
+    "grunt-contrib-connect": "~0.9.0",
+    "grunt-mocha-phantomjs": "~0.6.0"
   },
   "repository": {
     "type": "git",

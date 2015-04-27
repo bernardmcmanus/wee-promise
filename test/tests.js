@@ -2,44 +2,39 @@
 
   'use strict';
 
+  console.$disable = function() {
+    console.log = function() {};
+    console.error = function() {};
+  };
+  console.$enable = function() {
+    console.log = console._log;
+    console.error = console._error;
+  };
+  console._log = console.log;
+  console._error = console.error;
 
-  var util = require( 'util' );
-  var http = require( 'http' );
-  var WeePromise = require( '../index.js' );
-  var ES6_Promise = require( 'es6-promise' ).Promise;
-  var chai = require( 'chai' );
-  var colors = require( 'colors' );
-  var expect = chai.expect;
-
-
-  function theme( name , text ) {
-    text = text.toString();
-    switch (name) {
-      case 'h1':
-        return text.bold.underline.white;
-      case 'h2':
-      case 'h3':
-        return text.magenta;
-      default:
-        return text;
-    }
-  }
-
+  console.$disable();
 
   [
-    [ WeePromise , 'wee-promise' ],
-    [ ES6_Promise , 'es6-promise' ]
+    [ WeePromise , 'WeePromise (default provider)' ],
+    /*[ WeePromise , 'WeePromise (observer provider)' , briskit.providers.observer ],
+    [ WeePromise , 'WeePromise (worker provider)' , briskit.providers.worker ],
+    [ WeePromise , 'WeePromise (timeout provider)' , briskit.providers.timeout ],*/
+    [ ES6Promise.Promise , 'ES6Promise' ]
   ]
   .forEach(function( args ) {
 
-
     var Promise = args[0];
     var name = args[1];
-    
+    var provider = args[2];
 
-    describe(theme( 'h1' , name ) , function() {
+    if (provider) {
+      briskit.use( provider );
+    }
 
-      describe(theme( 'h2' , 'Constructor' ) , function() {
+    describe( name , function() {
+
+      describe( 'Constructor' , function() {
         it( 'should fail silently when an error is thrown' , function( done ) {
           new Promise(function( resolve , reject ) {
             async( done );
@@ -48,7 +43,7 @@
         });
       });
 
-      describe(theme( 'h2' , '#then()' ) , function() {
+      describe( '#then()' , function() {
         it( 'should do nothing when resolve is called twice' , function( done ) {
           new Promise(function( resolve , reject ) {
             resolve();
@@ -101,6 +96,8 @@
         });
         it( 'should allow for promise chaining (asynchronous)' , function( done ) {
 
+          console.$enable();
+
           var start = Date.now();
           var delay = 100;
           var tolerance = 50;
@@ -135,6 +132,7 @@
           })
           .catch( done );
         });
+return;
         it( 'should allow for promise chaining (synchronous)' , function( done ) {
           new Promise(function( resolve ) {
             resolve();
@@ -218,7 +216,9 @@
         });
       });
 
-      describe(theme( 'h2' , '#catch()' ) , function() {
+return;
+
+      describe( '#catch()' , function() {
         it( 'should do nothing when reject is called twice' , function( done ) {
           new Promise(function( resolve , reject ) {
             reject();
@@ -300,9 +300,9 @@
         });
       });
 
-      describe(theme( 'h2' , '#all()' ) , function() {
+      describe( '#all()' , function() {
 
-        describe(theme( 'h3' , '#then()' ) , function() {
+        describe( '#then()' , function() {
           it( 'should be executed once all promises are resolved (asynchronous)' , function( done ) {
             all_then( Promise , false , function( result ) {
               done();
@@ -501,7 +501,7 @@
           });
         });
 
-        describe(theme( 'h3' , '#catch()' ) , function() {
+        describe( '#catch()' , function() {
           it( 'should be executed if a promise is rejected (asynchronous)' , function( done ) {
             all_catch( Promise , false , function( result ) {
               done();
@@ -555,9 +555,9 @@
         });
       });
 
-      describe(theme( 'h2' , '#race()' ) , function() {
+      describe( '#race()' , function() {
 
-        describe(theme( 'h3' , '#then()' ) , function() {
+        describe( '#then()' , function() {
           it( 'should be executed once the first promise is resolved (asynchronous)' , function( done ) {
             race_then( Promise , false , function( result ) {
               done();
@@ -613,7 +613,7 @@
         });
       });
 
-      describe(theme( 'h2' , 'Functional Tests' ) , function() {
+      describe( 'Functional Tests' , function() {
 
         it( 'when a single promise is rejected' , function( done ) {
           new Promise(function( resolve , reject ) {
@@ -913,25 +913,10 @@
           function loadImages( srcObj ) {
 
             function load( imgObj , key ) {
-              return new Promise(function( resolve , reject ) {
-                http.get( imgObj.src )
-                .on( 'response' , function( res ) {
-                  var statusCode = parseInt( res.statusCode , 10 );
-                  res.on( 'data' , function() {} );
-                  res.on( 'end' , function() {
-                    if (statusCode === 200) {
-                      resolve();
-                    }
-                    else {
-                      reject();
-                    }
-                  });
-                })
-                .on( 'error' , function() {
-                  reject();
-                });
-              })
-              .then(function() {
+              /*return new Promise(function( resolve , reject ) {
+                $.ajax({ url: imgObj.src }).success( resolve ).error( reject );
+              })*/
+              fakeHttp.get( Promise , imgObj.src ).then(function() {
                 return true;
               })
               .catch(function() {
@@ -956,13 +941,20 @@
   });
 
 
-  function log() {
-    var args = Array.prototype.slice.call( arguments , 0 );
-    args = args.map(function( arg ) {
-      return util.inspect.apply( util , [ arg , { colors: true, depth: 3 }]);
-    });
-    console.log.apply( console , args );
-  }
+  var fakeHttp = {
+    get: function( Promise , url ) {
+      return new Promise(function( resolve , reject ) {
+        setTimeout(function() {
+          if ((/fail/i).test( url )) {
+            reject();
+          }
+          else {
+            resolve();
+          }
+        }, Math.round( Math.random() * 500 ));
+      });
+    }
+  };
 
   
   function all_then( Promise , sync , callback ) {
