@@ -36,10 +36,10 @@
 
   [
     [ WeePromise , 'WeePromise (default provider)' ],
-    [ WeePromise , 'WeePromise (observer provider)' , briskit.providers.observer ],
+    /*[ WeePromise , 'WeePromise (observer provider)' , briskit.providers.observer ],
     [ WeePromise , 'WeePromise (worker provider)' , briskit.providers.worker ],
-    [ WeePromise , 'WeePromise (timeout provider)' , briskit.providers.timeout ],
-    [ ES6Promise.Promise , 'ES6Promise' ]
+    [ WeePromise , 'WeePromise (timeout provider)' , briskit.providers.timeout ],*/
+    // [ ES6Promise.Promise , 'ES6Promise' ]
   ]
   .forEach(function( args ) {
 
@@ -332,7 +332,9 @@
         });
       });
 
-      /*describe( '#all()' , function() {
+      describe( '#all()' , function() {
+
+// console.$on();
 
         describe( '#then()' , function() {
           it( 'should be executed once all promises are resolved (asynchronous)' , function( done ) {
@@ -438,6 +440,7 @@
             })
             .catch( done );
           });
+return;
           it( 'should allow for promise chaining (synchronous)' , function( done ) {
 
             var promises = [ 0 , 1 , 2 ].map(function( i ) {
@@ -533,6 +536,8 @@
           });
         });
 
+return;
+
         describe( '#catch()' , function() {
           it( 'should be executed if a promise is rejected (asynchronous)' , function( done ) {
             all_catch( Promise , false , function( result ) {
@@ -586,8 +591,8 @@
           });
         });
       });
-
-      describe( '#race()' , function() {
+return;
+      /*describe( '#race()' , function() {
 
         describe( '#then()' , function() {
           it( 'should be executed once the first promise is resolved (asynchronous)' , function( done ) {
