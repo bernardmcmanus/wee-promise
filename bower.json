@@ -5,18 +5,17 @@
   "authors": [
     "Bernard McManus"
   ],
-  "description": "an ultra light promises polyfill",
+  "description": "an ultra light promises implementation",
   "main": "dist/wee-promise.min.js",
   "devDependencies": {
+    "briskit": "0.2.1",
     "jquery": "~2.1.3",
     "mocha": "~2.1.0",
     "chai": "~2.1.1",
     "es6-promise": "https://es6-promises.s3.amazonaws.com/es6-promise-2.0.1.js"
   },
   "keywords": [
-    "promise",
-    "polyfill",
-    "light"
+    "promise"
   ],
   "license": "MIT",
   "ignore": [

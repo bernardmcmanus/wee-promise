@@ -1,6 +1,6 @@
-/*! wee-promise - 0.3.0 - Bernard McManus -  -  - 2015-05-02 */
+/*! wee-promise - 0.3.0 - Bernard McManus - 8116b49 - 2015-08-04 */
 
-/*! briskit - 0.2.0 - Bernard McManus - 5913d2b - 2015-04-26 */
+/*! briskit - 0.2.1 - Bernard McManus - 8d12cda - 2015-07-12 */
 
 (function(Array,setTimeout,$UNDEFINED) {
     "use strict";
@@ -333,56 +333,56 @@ window.WeePromise = (function( Array , briskit ) {
 
 
 
-  Promise.race = function( arr ) {
-    return new Promise(function( resolve , reject ) {
-      forEach( arr , function( promise ) {
-        promise[ ALWAYS ](
-          checkArray( arr , resolve , reject , 1 , true )
-        );
-      });
-    });
-  };
+  // Promise.race = function( arr ) {
+  //   return new Promise(function( resolve , reject ) {
+  //     forEach( arr , function( promise ) {
+  //       promise[ ALWAYS ](
+  //         checkArray( arr , resolve , reject , 1 , true )
+  //       );
+  //     });
+  //   });
+  // };
 
-  function checkArray( arr , resolve , reject , test , single ) {
+  // function checkArray( arr , resolve , reject , test , single ) {
 
-    return function() {
+  //   return function() {
 
-      arr = arr.map(function( promise , i ) {
-        return isPromise( promise[_ARGS] ) ? promise[_ARGS] : promise;
-      });
+  //     arr = arr.map(function( promise , i ) {
+  //       return isPromise( promise[_ARGS] ) ? promise[_ARGS] : promise;
+  //     });
       
-      var resolved = filter( arr , 1 );
-      var rejected = filter( arr , -1 );
+  //     var resolved = filter( arr , 1 );
+  //     var rejected = filter( arr , -1 );
 
-      if (length( resolved ) === test) {
+  //     if (length( resolved ) === test) {
 
-        var args = resolved.map(function( promise ) {
-          return promise[_ARGS][0];
-        });
+  //       var args = resolved.map(function( promise ) {
+  //         return promise[_ARGS][0];
+  //       });
         
-        resolve( single ? args[0] : args );
-      }
-      else if (length( rejected ) > 0) {
-        reject(
-          rejected[0][_ARGS][0]
-        );
-      }
-    };
-  }
+  //       resolve( single ? args[0] : args );
+  //     }
+  //     else if (length( rejected ) > 0) {
+  //       reject(
+  //         rejected[0][_ARGS][0]
+  //       );
+  //     }
+  //   };
+  // }
 
-  function isHandled( subject ) {
-    return length(subject[ _CATCH ]) > 0;
-  }
+  // function isHandled( subject ) {
+  //   return length(subject[ _CATCH ]) > 0;
+  // }
 
 
-  function filter( arr , testState ) {
-    return arr.filter(function( promise ) {
-      return (/*!isPromise( promise ) ||*/ (promise[_STATE] === testState));
-    });
-  }
+  // function filter( arr , testState ) {
+  //   return arr.filter(function( promise ) {
+  //     return (/*!isPromise( promise ) ||*/ (promise[_STATE] === testState));
+  //   });
+  // }
 
-  function isPromise( subject ) {
-    return subject instanceof Promise;
-  }
+  // function isPromise( subject ) {
+  //   return subject instanceof Promise;
+  // }
   
 }( Array , briskit ));

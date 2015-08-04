@@ -1,27 +1,13 @@
 module.exports = function( grunt ) {
 
-  var fs = require( 'fs' );
-  var cp = require( 'child_process' );
-  var colors = require( 'colors' );
-
-  var src = [
-    'node_modules/briskit/dist/briskit.js',
-    'index.js'
-  ];
-
   grunt.initConfig({
 
     pkg: grunt.file.readJSON( 'package.json' ),
 
-    'git-describe': {
-      'options': {
-        prop: 'git-version'
-      },
-      dist: {}
-    },
+    gitinfo: {},
 
     jshint: {
-      all: [ 'index.js' ]
+      all: '<%= pkg.config.src %>'
     },
 
     clean: {
@@ -30,23 +16,15 @@ module.exports = function( grunt ) {
 
     replace: [{
       options: {
-        patterns: [
-          {
-            match: /\"version\".*?\".*\"/i,
-            replacement: '\"version\": \"<%= pkg.version %>\"'
-          }
-        ]
+        patterns: [{
+          match: /(.*"version"\:\s*).*(?=,)/i,
+          replacement: '$1"<%= pkg.version %>"'
+        }]
       },
-      files: [
-        {
-          src: 'package.json',
-          dest: 'package.json'
-        },
-        {
-          src: 'bower.json',
-          dest: 'bower.json'
-        }
-      ]
+      files: [{
+        src: 'bower.json',
+        dest: 'bower.json'
+      }]
     }],
 
     'release-describe': {
@@ -58,19 +36,19 @@ module.exports = function( grunt ) {
 
     concat: {
       options: {
-        banner: '/*! <%= pkg.name %> - <%= pkg.version %> - <%= pkg.author.name %> - <%= grunt.config.get( \'git-branch\' ) %> - <%= grunt.config.get( \'git-hash\' ) %> - <%= grunt.template.today("yyyy-mm-dd") %> */\n\n'
+        banner: '<%= pkg.config.banner %>\n'
       },
-      release: {
-        src: src,
+      dist: {
+        src: [ '<%= pkg.config.lib %>' , '<%= pkg.config.src %>' ],
         dest: 'dist/<%= pkg.name %>.js'
       }
     },
 
     uglify: {
       options: {
-        banner: '/*! <%= pkg.name %> - <%= pkg.version %> - <%= pkg.author.name %> - <%= grunt.config.get( \'git-branch\' ) %> - <%= grunt.config.get( \'git-hash\' ) %> - <%= grunt.template.today("yyyy-mm-dd") %> */\n'
+        banner: '<%= pkg.config.banner %>'
       },
-      release: {
+      dist: {
         src: 'dist/<%= pkg.name %>.js',
         dest: 'dist/<%= pkg.name %>.min.js'
       }
@@ -78,18 +56,18 @@ module.exports = function( grunt ) {
 
     watch: {
       debug: {
-        files: [ '*.js' , 'test/*' ],
+        files: [ '<%= pkg.config.src %>' , 'test/*' ],
         options: { interrupt: true },
-        tasks: [ 'clean' , 'concat' , 'mocha_phantomjs' ]
+        tasks: [ 'build' , 'mocha_phantomjs' ]
       },
     },
 
     connect: {
       server: {
         options: {
-          port: 9001,
-          base: '.',
-          hostname: '0.0.0.0',
+          port: '<%= pkg.config.connect.port %>',
+          base: '<%= pkg.config.connect.base %>',
+          hostname: '<%= pkg.config.connect.hostname %>'
         }
       }
     },
@@ -97,7 +75,7 @@ module.exports = function( grunt ) {
     mocha_phantomjs: {
       test: {
         options: { urls: [
-          '/test/index.html'
+          '<%= pkg.config.connect.url %>/test/index.html'
         ]}
       }
     }
@@ -108,7 +86,7 @@ module.exports = function( grunt ) {
   [
     'grunt-contrib-jshint',
     'grunt-contrib-clean',
-    'grunt-git-describe',
+    'grunt-gitinfo',
     'grunt-replace',
     'grunt-contrib-watch',
     'grunt-contrib-concat',
@@ -118,67 +96,19 @@ module.exports = function( grunt ) {
   ]
   .forEach( grunt.loadNpmTasks );
 
-  grunt.registerTask( 'git:hash' , function() {
-    grunt.task.requires( 'git-describe' );
-    var rev = grunt.config.get( 'git-version' );
-    var matches = rev.match( /(\-{0,1})+([A-Za-z0-9]{7})+(\-{0,1})/ );
-    var hash = matches
-      .filter(function( match ) {
-        return match.length === 7;
-      })
-      .pop();
-    if (matches && matches.length > 1) {
-      grunt.config.set( 'git-hash' , hash );
-    }
-    else{
-      grunt.config.set( 'git-hash' , rev );
-    }
-  });
-
-  grunt.registerTask( 'git:branch' , function() {
-    var done = this.async();
-    cp.exec( 'git status' , function( err , stdout , stderr ) {
-      if (!err) {
-        var branch = stdout
-          .split( '\n' )
-          .shift()
-          .replace( /on\sbranch\s/i , '' );
-        grunt.config.set( 'git-branch' , branch );
-      }
-      done();
-    });
-  });
-
-  /*grunt.registerTask( 'test' , function() {
-    var done = this.async();
-    new Promise(function( resolve ) {
-      var task = cp.spawn( 'npm' , [ 'test' ]);
-      resolve( task.stdout );
-    })
-    .then(function( readable ) {
-      readable.pipe( process.stdout );
-      return new Promise(function( resolve , reject ) {
-        readable.on( 'end' , resolve );
-        readable.on( 'error' , reject );
-      });
-    })
-    .then( done )
-    .catch( grunt.fail.fatal );
-  });*/
-
-  grunt.registerTask( 'always' , [
-    'jshint',
-    'clean',
-    'git-describe',
-    'git:hash',
-    'git:branch'
+  grunt.registerTask( 'default' , [
+    'build',
+    'test',
+    'replace',
+    'release-describe'
   ]);
 
-  grunt.registerTask( 'debug' , [
+  grunt.registerTask( 'build' , [
     'clean',
+    'jshint',
+    'gitinfo',
     'concat',
-    'test',
-    'watch'
+    'uglify'
   ]);
 
   grunt.registerTask( 'test' , [
@@ -186,12 +116,9 @@ module.exports = function( grunt ) {
     'mocha_phantomjs'
   ]);
 
-  grunt.registerTask( 'default' , [
-    'always',
-    'concat',
-    'uglify',
-    'test',
-    'replace',
-    'release-describe'
+  grunt.registerTask( 'debug' , [
+    'build',
+    'connect',
+    'watch'
   ]);
 };
