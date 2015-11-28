@@ -1,32 +1,28 @@
 {
   "name": "wee-promise",
-  "version": "0.2.1",
-  "description": "an ultra light promises polyfill",
-  "main": "wee-promise-0.2.1.min.js",
+  "version": "0.3.0",
+  "description": "An ultra light Promises / A+ implementation",
+  "main": "dist/wee-promise.js",
   "scripts": {
-    "httpd": "supervisor ./test/httpd/server.js",
-    "test": "clear; mocha ./test/test.js"
+    "install": "bower install"
   },
-  "devDependencies": {
-    "httpd-node": "git://github.com/elnarddogg/httpd-node.git#cb870e4de7dde3e0b55880e9c9865b00b4cf607f",
-    "mocha": "1.21.4",
-    "chai": "1.9.1",
-    "es6-promise": ">=2.0.0",
-    "colors": "*",
-    "grunt": "~0.4.2",
-    "grunt-contrib-jshint": "~0.6.3",
-    "grunt-contrib-uglify": ">=0.5.0",
-    "grunt-contrib-clean": ">=0.4.1",
-    "grunt-git-describe": "~2.0.2",
-    "grunt-replace": ">=0.7.7"
+  "config": {
+    "src": "src/!(stack)",
+    "banner": "/*! <%= pkg.name %> - <%= pkg.version %> - <%= pkg.author.name %> - <%= grunt.config.data.gitinfo.local.branch.current.shortSHA %> - <%= grunt.template.today('yyyy-mm-dd') %> */\n",
+    "connect": {
+      "port": 8001,
+      "base": ".",
+      "hostname": "0.0.0.0"
+    }
   },
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/elnarddogg/wee-promise.git"
   },
   "keywords": [
     "promise",
-    "polyfill",
+    "A+",
     "light"
   ],
   "author": {
@@ -34,12 +30,27 @@
     "email": "bernard.mcmanus.iv@gmail.com",
     "url": "http://github.com/elnarddogg"
   },
-  "license": {
-    "type": "MIT",
-    "url": "https://github.com/elnarddogg/wee-promise/blob/master/LICENSE.txt"
-  },
   "bugs": {
     "url": "https://github.com/elnarddogg/wee-promise/issues"
   },
-  "homepage": "https://github.com/elnarddogg/wee-promise"
+  "homepage": "https://github.com/elnarddogg/wee-promise",
+  "devDependencies": {
+    "bluebird": "^3.0.5",
+    "colors": "^1.1.2",
+    "connect-preprocess": "^1.0.0",
+    "connect-query": "^0.2.0",
+    "fs-extra": "^0.26.2",
+    "grunt": "~0.4.2",
+    "grunt-contrib-clean": ">=0.4.1",
+    "grunt-contrib-concat": "^0.5.1",
+    "grunt-contrib-connect": "^0.11.2",
+    "grunt-contrib-jshint": "~0.6.3",
+    "grunt-contrib-uglify": ">=0.5.0",
+    "grunt-git-describe": "~2.0.2",
+    "grunt-gitinfo": "^0.1.7",
+    "grunt-mocha-phantomjs": "^2.0.1",
+    "grunt-replace": ">=0.7.7",
+    "grunt-update-json": "^0.2.1",
+    "intercept-stdout": "^0.1.2"
+  }
 }
