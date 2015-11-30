@@ -1,0 +1,36 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <title>Mocha</title>
+    <link rel="stylesheet" type="text/css" href="/bower_components/mocha/mocha.css" />
+    <script src="/bower_components/mocha/mocha.js"></script>
+    <script src="/bower_components/chai/chai.js"></script>
+    <script src="/bower_components/lodash/lodash.js"></script>
+    <script src="/bower_components/q/q.js"></script>
+    <script>
+      // make sure the native promises implementation is not overridden by ES6Promise
+      (function(){
+        var Promise = window.Promise;
+        Object.defineProperty( window , 'Promise' , {
+          get: function(){ return Promise; },
+          set: function(){/* noop */}
+        });
+      }());
+    </script>
+    <script src="/bower_components/es6-promise/promise.js"></script>
+    <script src="/src/main.js"></script>
+  </head>
+  <body>
+    <div id="mocha"></div>
+  </body>
+  <script>
+    window.query = JSON.parse( '<%= query %>' );
+    window.expect = chai.expect;
+    mocha.setup( 'bdd' );
+    mocha.reporter( 'html' );
+    document.write( '<sc' + 'ript src="/test/' + query.test + '.js"></sc' + 'ript>' );
+  </script>
+  <script>mocha.run();</script>
+</html>

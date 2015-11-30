@@ -1,4 +1,4 @@
 wee-promise
 ===========
 
-an ultra light (< 1k minified / gzipped) promises polyfill.
+> An ultra light (~1k minified / gzipped) Promises / A+ implementation.

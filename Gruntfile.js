@@ -1,161 +1,147 @@
 module.exports = function( grunt ) {
-
-
-  var fs = require( 'fs' );
-  var exec = require( 'child_process' ).exec;
-  var colors = require( 'colors' );
-
-
-  var Build = [
-    'index.js'
-  ];
-
+  // Clean up HTTP errors encountered during tests
+  require( 'intercept-stdout' )(function( text ){
+    if (Buffer.isBuffer( text )) {
+      text = text.toString( 'utf-8' );
+    }
+    if ((/Error loading resource/i).test( text )) {
+      return '';
+    }
+  });
 
   grunt.initConfig({
-
     pkg: grunt.file.readJSON( 'package.json' ),
-
-    'git-describe': {
-      'options': {
-        prop: 'git-version'
-      },
-      dist: {}
-    },
-
+    gitinfo: {},
     jshint: {
-      all: [ 'index.js' ]
+      all: [ '<%= pkg.config.src %>' ]
     },
-
     clean: {
-      all: [ '<%= pkg.name %>-*.js' ]
+      all: [ 'dist' ]
     },
-
-    replace: [{
+    update_json: {
       options: {
-        patterns: [
-          {
-            match: /\"version\".*?\".*\"/i,
-            replacement: '\"version\": \"<%= pkg.version %>\"'
-          },
-          {
-            match: /\"main\".*?\".*\"/i,
-            replacement: '\"main\": \"<%= pkg.name %>-<%= pkg.version %>.min.js\"'
-          }
-        ]
+        src: 'package.json',
+        indent: 2
       },
-      files: [
-        {
-          src: 'package.json',
-          dest: 'package.json'
-        },
-        {
-          src: 'bower.json',
-          dest: 'bower.json'
+      bower: {
+        dest: 'bower.json',
+        fields: [
+          'name',
+          'version',
+          'main',
+          'description',
+          'keywords',
+          'homepage',
+          'license'
+        ]
+      }
+    },
+    concat: {
+      options: {
+        banner: '<%= pkg.config.banner %>\n',
+        stripBanners: {
+          options: { block: true }
         }
-      ]
-    }],
-
+      },
+      dist: {
+        files: {
+          'dist/<%= pkg.name %>.js': '<%= pkg.config.src %>'
+        }
+      }
+    },
     uglify: {
       options: {
-        banner: '/*! <%= pkg.name %> - <%= pkg.version %> - <%= pkg.author.name %> - <%= grunt.config.get( \'git-branch\' ) %> - <%= grunt.config.get( \'git-hash\' ) %> - <%= grunt.template.today("yyyy-mm-dd") %> */\n'
+        banner: '<%= pkg.config.banner %>'
       },
-      release: {
+      dist: {
         files: {
-          '<%= pkg.name %>-<%= pkg.version %>.min.js': Build
+          'dist/<%= pkg.name %>.min.js': '<%= pkg.config.src %>'
+        }
+      }
+    },
+    connect: {
+      server: {
+        options: {
+          port: '<%= pkg.config.connect.port %>',
+          base: '<%= pkg.config.connect.base %>',
+          hostname: '<%= pkg.config.connect.hostname %>',
+          interrupt: true,
+          middleware: function( connect , options , middlewares ){
+            var Preprocessor = require( 'connect-preprocess' );
+            var Query = require( 'connect-query' );
+            grunt.config.set( 'query' , '{}' );
+            return [
+              Query(),
+              function( req , res , next ){
+                if (Object.keys( req.query ).length) {
+                  grunt.config.set( 'query' , JSON.stringify( req.query ));
+                }
+                next();
+              },
+              Preprocessor({
+                accept: [ 'html' ],
+                engine: grunt.config.process
+              })
+            ]
+            .concat( middlewares );
+          }
+        }
+      }
+    },
+    mocha_phantomjs: {
+      dist: {
+        options: {
+          urls: [
+            'http://localhost:<%= pkg.config.connect.port %>/test/index.html?test=unit',
+            'http://localhost:<%= pkg.config.connect.port %>/test/index.html?test=functional'
+          ]
+        }
+      }
+    },
+    'release-describe': {
+      dist: {
+        files: {
+          'dist/<%= pkg.name %>.min.js': 'dist/<%= pkg.name %>.js'
         }
       }
     }
   });
 
+  grunt.loadTasks( 'tasks' );
 
   [
     'grunt-contrib-jshint',
     'grunt-contrib-clean',
-    'grunt-git-describe',
-    'grunt-replace',
-    'grunt-contrib-uglify'
+    'grunt-contrib-concat',
+    'grunt-contrib-uglify',
+    'grunt-contrib-connect',
+    'grunt-mocha-phantomjs',
+    'grunt-update-json',
+    'grunt-gitinfo'
   ]
   .forEach( grunt.loadNpmTasks );
 
-
-  grunt.registerTask( 'getHash' , function() {
-    grunt.task.requires( 'git-describe' );
-    var rev = grunt.config.get( 'git-version' );
-    var matches = rev.match( /(\-{0,1})+([A-Za-z0-9]{7})+(\-{0,1})/ );
-    var hash = matches
-      .filter(function( match ) {
-        return match.length === 7;
-      })
-      .pop();
-    if (matches && matches.length > 1) {
-      grunt.config.set( 'git-hash' , hash );
-    }
-    else{
-      grunt.config.set( 'git-hash' , rev );
-    }
-  });
-
-
-  grunt.registerTask( 'getBranch' , function() {
-    var done = this.async();
-    exec( 'git status' , function( err , stdout , stderr ) {
-      if (!err) {
-        var branch = stdout
-          .split( '\n' )
-          .shift()
-          .replace( /on\sbranch\s/i , '' );
-        grunt.config.set( 'git-branch' , branch );
-      }
-      done();
-    });
-  });
-
-
-  grunt.registerTask( 'build-describe' , function() {
-    var pkg = grunt.config.get( 'pkg' );
-    var name = pkg.name + '-' + pkg.version + '.min.js';
-    var bytesInit = Build.reduce(function( prev , current ) {
-      return prev + fs.statSync( current ).size;
-    }, 0);
-    var bytesFinal = fs.statSync( name ).size;
-    var kbInit = (Math.round( bytesInit / 10 ) / 100);
-    var kbFinal = (Math.round( bytesFinal / 10 ) / 100).toString();
-    console.log('File ' + name.cyan + ' created: ' + (kbInit + ' kB').green + ' \u2192 ' + (kbFinal + ' kB').green);
-  });
-
-
-  grunt.registerTask( 'always' , [
-    'jshint',
-    'clean',
-    'git-describe',
-    'getHash',
-    'getBranch',
-    'replace'
-  ]);
-
-
   grunt.registerTask( 'default' , [
-    'always',
-    'uglify',
-    'build-describe'
+    'build',
+    'test',
+    'update_json',
+    'release-describe'
   ]);
+
+  grunt.registerTask( 'build' , [
+    'clean',
+    'gitinfo',
+    'concat',
+    'uglify'
+  ]);
+
+  grunt.registerTask( 'test' , [
+    'connect',
+    'mocha_phantomjs'
+  ]);
+
+  grunt.registerTask( 'debug' , function(){
+    grunt.config.set( 'connect.server.options.keepalive' , true );
+    grunt.task.run( 'connect' );
+  });
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
