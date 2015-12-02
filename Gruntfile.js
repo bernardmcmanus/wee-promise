@@ -37,26 +37,71 @@ module.exports = function( grunt ) {
       }
     },
     concat: {
-      options: {
-        banner: '<%= pkg.config.banner %>\n',
-        stripBanners: {
-          options: { block: true }
-        }
+      tmp: {
+        files: { 'dist/<%= pkg.name %>.js': '<%= pkg.config.src %>' }
       },
       dist: {
-        files: {
-          'dist/<%= pkg.name %>.js': '<%= pkg.config.src %>'
-        }
+        options: { banner: '<%= pkg.config.banner %>\n' },
+        files: { 'dist/<%= pkg.name %>.js': 'dist/<%= pkg.name %>.js' }
       }
     },
     uglify: {
+      dist: {
+        options: { banner: '<%= pkg.config.banner %>' },
+        files: { 'dist/<%= pkg.name %>.min.js': 'dist/<%= pkg.name %>.js' }
+      }
+    },
+    wrap: {
       options: {
-        banner: '<%= pkg.config.banner %>'
+        args: (function(){
+          var args = [
+            // 'setTimeout',
+            'Image',
+            ['UNDEFINED']
+          ];
+          var leadingWrapArgs = args.map(function( arg ){
+            return Array.isArray( arg ) ? arg.shift() : arg;
+          })
+          .filter(function( arg ){
+            return !!arg;
+          });
+          var trailingWrapArgs = args.map(function( arg ){
+            return Array.isArray( arg ) ? arg.pop() : arg;
+          })
+          .filter(function( arg ){
+            return !!arg;
+          });
+          return {
+            leading: leadingWrapArgs,
+            trailing: trailingWrapArgs
+          };
+        }()),
+        wrapper: [
+          [
+              '(function(<%= wrap.options.args.leading %>){',
+                '"use strict";'
+          ]
+          .join('\n'),
+          [
+              'if (typeof exports == "object") {',
+                'module.exports = WeePromise;',
+              '} else {',
+                'self.WeePromise = WeePromise;',
+              '}',
+            '}(<%= wrap.options.args.trailing %>));'
+          ]
+          .join('\n')
+        ]
       },
       dist: {
-        files: {
-          'dist/<%= pkg.name %>.min.js': '<%= pkg.config.src %>'
-        }
+        files: { 'dist/<%= pkg.name %>.js': 'dist/<%= pkg.name %>.js' }
+      }
+    },
+    watch: {
+      options: { interrupt: true },
+      all: {
+        files: '<%= pkg.config.src %>',
+        tasks: [ 'build' , 'mocha_phantomjs' ]
       }
     },
     connect: {
@@ -93,16 +138,14 @@ module.exports = function( grunt ) {
         options: {
           urls: [
             'http://localhost:<%= pkg.config.connect.port %>/test/index.html?test=unit',
-            'http://localhost:<%= pkg.config.connect.port %>/test/index.html?test=functional'
+            // 'http://localhost:<%= pkg.config.connect.port %>/test/index.html?test=functional'
           ]
         }
       }
     },
     'release-describe': {
       dist: {
-        files: {
-          'dist/<%= pkg.name %>.min.js': 'dist/<%= pkg.name %>.js'
-        }
+        files: { 'dist/<%= pkg.name %>.min.js': 'dist/<%= pkg.name %>.js' }
       }
     }
   });
@@ -115,14 +158,17 @@ module.exports = function( grunt ) {
     'grunt-contrib-concat',
     'grunt-contrib-uglify',
     'grunt-contrib-connect',
+    'grunt-contrib-watch',
     'grunt-mocha-phantomjs',
     'grunt-update-json',
+    'grunt-wrap',
     'grunt-gitinfo'
   ]
   .forEach( grunt.loadNpmTasks );
 
   grunt.registerTask( 'default' , [
     'build',
+    'uglify',
     'test',
     'update_json',
     'release-describe'
@@ -131,17 +177,23 @@ module.exports = function( grunt ) {
   grunt.registerTask( 'build' , [
     'clean',
     'gitinfo',
-    'concat',
-    'uglify'
+    'concat:tmp',
+    'wrap',
+    'concat:dist'
   ]);
 
-  grunt.registerTask( 'test' , [
-    'connect',
-    'mocha_phantomjs'
-  ]);
-
-  grunt.registerTask( 'debug' , function(){
-    grunt.config.set( 'connect.server.options.keepalive' , true );
-    grunt.task.run( 'connect' );
+  grunt.registerTask( 'test' , function(){
+    try {
+      grunt.task.requires( 'build' );
+    }
+    catch( err ){
+      grunt.task.run( 'build' );
+    }
+    grunt.task.run([ 'connect' , 'mocha_phantomjs' ]);
   });
+
+  grunt.registerTask( 'debug' , [
+    'test',
+    'watch'
+  ]);
 };

@@ -20,12 +20,42 @@
       }());
     </script>
     <script src="/bower_components/es6-promise/promise.js"></script>
-    <script src="/src/main.js"></script>
+    <script src="/<%= pkg.main %>"></script>
   </head>
   <body>
     <div id="mocha"></div>
   </body>
   <script>
+    /*for (var i = 0; i < 2; i++) {
+      (function( i ){
+        setTimeout(function(){
+          console.log('setTimeout %s',i);
+        });
+        asap(function(){
+          console.log('asap %s',i);
+        });
+        console.log('sync %s',i);
+      }( i ));
+    }*/
+    /*function convertToDataURLviaCanvas(url, callback, outputFormat){
+        var img = new Image();
+        // img.crossOrigin = 'Anonymous';
+        img.onload = function(){
+            var canvas = document.createElement('CANVAS');
+            var ctx = canvas.getContext('2d');
+            var dataURL;
+            canvas.height = this.height;
+            canvas.width = this.width;
+            ctx.drawImage(this, 0, 0);
+            dataURL = canvas.toDataURL(outputFormat);
+            callback(dataURL);
+            canvas = null; 
+        };
+        img.src = url;
+    }
+    convertToDataURLviaCanvas('/1x1.gif',function(base64){
+      console.log(base64);
+    });*/
     window.query = JSON.parse( '<%= query %>' );
     window.expect = chai.expect;
     mocha.setup( 'bdd' );
