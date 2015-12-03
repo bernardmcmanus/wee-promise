@@ -41,6 +41,7 @@ module.exports = function( grunt ) {
         args: (function(){
           var args = [
             'setTimeout',
+            'TypeError',
             ['UNDEFINED']
           ];
           var leadingWrapArgs = args.map(function( arg ){
@@ -100,46 +101,7 @@ module.exports = function( grunt ) {
       options: { interrupt: true },
       all: {
         files: '<%= pkg.config.src %>',
-        tasks: [ 'build' , 'mocha_phantomjs' ]
-      }
-    },
-    connect: {
-      server: {
-        options: {
-          port: '<%= pkg.config.connect.port %>',
-          base: '<%= pkg.config.connect.base %>',
-          hostname: '<%= pkg.config.connect.hostname %>',
-          interrupt: true,
-          middleware: function( connect , options , middlewares ){
-            var Preprocessor = require( 'connect-preprocess' );
-            var Query = require( 'connect-query' );
-            grunt.config.set( 'query' , '{}' );
-            return [
-              Query(),
-              function( req , res , next ){
-                if (Object.keys( req.query ).length) {
-                  grunt.config.set( 'query' , JSON.stringify( req.query ));
-                }
-                next();
-              },
-              Preprocessor({
-                accept: [ 'html' ],
-                engine: grunt.config.process
-              })
-            ]
-            .concat( middlewares );
-          }
-        }
-      }
-    },
-    mocha_phantomjs: {
-      dist: {
-        options: {
-          urls: [
-            'http://localhost:<%= pkg.config.connect.port %>/test/index.html?test=unit',
-            'http://localhost:<%= pkg.config.connect.port %>/test/index.html?test=functional'
-          ]
-        }
+        tasks: [ 'build' , 'test' ]
       }
     },
     'release-describe': {
@@ -156,9 +118,7 @@ module.exports = function( grunt ) {
     'grunt-contrib-clean',
     'grunt-contrib-concat',
     'grunt-contrib-uglify',
-    'grunt-contrib-connect',
     'grunt-contrib-watch',
-    'grunt-mocha-phantomjs',
     'grunt-update-json',
     'grunt-wrap',
     'grunt-gitinfo'
@@ -188,7 +148,7 @@ module.exports = function( grunt ) {
     catch( err ){
       grunt.task.run( 'build' );
     }
-    grunt.task.run([ 'connect' , 'mocha_phantomjs' ]);
+    grunt.task.run( 'a-plus' );
   });
 
   grunt.registerTask( 'debug' , [

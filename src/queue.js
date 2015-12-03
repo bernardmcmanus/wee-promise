@@ -4,10 +4,8 @@ function Queue(){
     index = 0,
     that = {
       push: function( type , func ){
-        if (func) {
-          stack[length] = { type: type, func: func };
-          length++;
-        }
+        stack[length] = { type: type, func: func };
+        length++;
       },
       pull: function(){
         var arg = stack[index];

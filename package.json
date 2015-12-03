@@ -12,12 +12,7 @@
       "src/queue.js",
       "src/main.js"
     ],
-    "banner": "/*! <%= pkg.name %> - <%= pkg.version %> - <%= pkg.author.name %> - <%= grunt.config.data.gitinfo.local.branch.current.shortSHA %> - <%= grunt.template.today('yyyy-mm-dd') %> */\n",
-    "connect": {
-      "port": 8001,
-      "base": ".",
-      "hostname": "0.0.0.0"
-    }
+    "banner": "/*! <%= pkg.name %> - <%= pkg.version %> - <%= pkg.author.name %> - <%= grunt.config.data.gitinfo.local.branch.current.shortSHA %> - <%= grunt.template.today('yyyy-mm-dd') %> */\n"
   },
   "license": "MIT",
   "repository": {
@@ -41,20 +36,14 @@
   "devDependencies": {
     "bluebird": "^3.0.5",
     "colors": "^1.1.2",
-    "connect-preprocess": "^1.0.0",
-    "connect-query": "^0.2.0",
     "fs-extra": "^0.26.2",
-    "grunt": "~0.4.2",
-    "grunt-contrib-clean": ">=0.4.1",
+    "grunt": "^0.4.2",
+    "grunt-contrib-clean": "^0.4.1",
     "grunt-contrib-concat": "^0.5.1",
-    "grunt-contrib-connect": "^0.11.2",
-    "grunt-contrib-jshint": "~0.6.3",
-    "grunt-contrib-uglify": ">=0.5.0",
+    "grunt-contrib-jshint": "^0.6.3",
+    "grunt-contrib-uglify": "^0.5.0",
     "grunt-contrib-watch": "^0.6.1",
-    "grunt-git-describe": "~2.0.2",
     "grunt-gitinfo": "^0.1.7",
-    "grunt-mocha-phantomjs": "^2.0.1",
-    "grunt-replace": ">=0.7.7",
     "grunt-update-json": "^0.2.1",
     "grunt-wrap": "^0.3.0",
     "intercept-stdout": "^0.1.2",

@@ -9,24 +9,22 @@ function WeePromise( resolver ){
   that._inprog = false;
   that.resolve = getResolverArg( that , THEN );
   that.reject = getResolverArg( that , FAIL );
-  asap(function(){
-    if (resolver) {
-      try {
-        resolver( that.resolve , that.reject );
-      }
-      catch( err ){
-        that.reject( err );
-      }
+  if (resolver) {
+    try {
+      resolver( that.resolve , that.reject );
     }
-  });
+    catch( err ){
+      that.reject( err );
+    }
+  }
 }
 
 WeePromise.prototype._add = function( type , func ){
-  var that = this,
-    state = that._state,
-    shouldExec = ((type == THEN && state == RESOLVED) || (type == FAIL && state == REJECTED));
-  that._queue.push( type , func );
-  return (shouldExec && !that._inprog) ? that._exec( type , that.result ) : that;
+  var that = this;
+  if (isFunction( func )) {
+    that._queue.push( type , func );
+  }
+  return that;
 };
 
 WeePromise.prototype._exec = function( type , result ){
@@ -39,6 +37,9 @@ WeePromise.prototype._exec = function( type , result ){
       case THEN:
         while (func = queue.next( type )) {
           result = func.call( UNDEFINED , result );
+          if (result == that){
+            throw new TypeError( 'A promise cannot be resolved with itself.' );
+          }
           if (isThenable( result )) {
             return handleThenable( that , result );
           }
@@ -129,11 +130,17 @@ WeePromise.race = function( collection ){
 
 function getResolverArg( context , type ){
   return function( result ){
-    if (!context._state) {
-      context._exec( type , result );
-    }
+    asap(function(){
+      if (!context._state) {
+        context._exec( type , result );
+      }
+    });
     return context;
   };
+}
+
+function isFunction( subject ){
+  return typeof subject == 'function';
 }
 
 function isThenable( subject ){
