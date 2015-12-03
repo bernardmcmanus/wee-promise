@@ -6,7 +6,6 @@ module.exports = function( grunt ) {
   var Promise = require( 'bluebird' );
 
   grunt.task.registerMultiTask( 'release-describe' , 'print total build size / minified size / gzipped size.' , function() {
-    var queue = [];
     var done = this.async();
 
     Promise.all(

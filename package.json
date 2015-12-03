@@ -1,6 +1,6 @@
 {
   "name": "wee-promise",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "description": "An ultra light Promises / A+ implementation",
   "main": "dist/wee-promise.js",
   "scripts": {
@@ -9,7 +9,7 @@
   "config": {
     "src": [
       "src/asap.js",
-      "src/stack.js",
+      "src/queue.js",
       "src/main.js"
     ],
     "banner": "/*! <%= pkg.name %> - <%= pkg.version %> - <%= pkg.author.name %> - <%= grunt.config.data.gitinfo.local.branch.current.shortSHA %> - <%= grunt.template.today('yyyy-mm-dd') %> */\n",
@@ -57,6 +57,7 @@
     "grunt-replace": ">=0.7.7",
     "grunt-update-json": "^0.2.1",
     "grunt-wrap": "^0.3.0",
-    "intercept-stdout": "^0.1.2"
+    "intercept-stdout": "^0.1.2",
+    "promises-aplus-tests": "^2.1.1"
   }
 }

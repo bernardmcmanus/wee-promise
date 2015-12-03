@@ -36,27 +36,11 @@ module.exports = function( grunt ) {
         ]
       }
     },
-    concat: {
-      tmp: {
-        files: { 'dist/<%= pkg.name %>.js': '<%= pkg.config.src %>' }
-      },
-      dist: {
-        options: { banner: '<%= pkg.config.banner %>\n' },
-        files: { 'dist/<%= pkg.name %>.js': 'dist/<%= pkg.name %>.js' }
-      }
-    },
-    uglify: {
-      dist: {
-        options: { banner: '<%= pkg.config.banner %>' },
-        files: { 'dist/<%= pkg.name %>.min.js': 'dist/<%= pkg.name %>.js' }
-      }
-    },
     wrap: {
       options: {
         args: (function(){
           var args = [
-            // 'setTimeout',
-            'Image',
+            'setTimeout',
             ['UNDEFINED']
           ];
           var leadingWrapArgs = args.map(function( arg ){
@@ -95,6 +79,21 @@ module.exports = function( grunt ) {
       },
       dist: {
         files: { 'dist/<%= pkg.name %>.js': 'dist/<%= pkg.name %>.js' }
+      }
+    },
+    concat: {
+      tmp: {
+        files: { 'dist/<%= pkg.name %>.js': '<%= pkg.config.src %>' }
+      },
+      dist: {
+        options: { banner: '<%= pkg.config.banner %>\n' },
+        files: { 'dist/<%= pkg.name %>.js': 'dist/<%= pkg.name %>.js' }
+      }
+    },
+    uglify: {
+      dist: {
+        options: { banner: '<%= pkg.config.banner %>' },
+        files: { 'dist/<%= pkg.name %>.min.js': 'dist/<%= pkg.name %>.js' }
       }
     },
     watch: {
@@ -138,7 +137,7 @@ module.exports = function( grunt ) {
         options: {
           urls: [
             'http://localhost:<%= pkg.config.connect.port %>/test/index.html?test=unit',
-            // 'http://localhost:<%= pkg.config.connect.port %>/test/index.html?test=functional'
+            'http://localhost:<%= pkg.config.connect.port %>/test/index.html?test=functional'
           ]
         }
       }
@@ -168,9 +167,9 @@ module.exports = function( grunt ) {
 
   grunt.registerTask( 'default' , [
     'build',
-    'uglify',
     'test',
     'update_json',
+    'uglify',
     'release-describe'
   ]);
 

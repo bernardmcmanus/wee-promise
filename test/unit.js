@@ -3,92 +3,22 @@
 
   [
     [ WeePromise , 'WeePromise' ],
-    // [ ES6Promise.Promise , 'ES6Promise' ]
+    [ ES6Promise.Promise , 'ES6Promise' ],
+    [ window.Promise , 'window.Promise' ]
   ]
   .forEach(_.spread(function( Promise , name ){
+    if (!Promise) return;
     describe( name , function(){
-      /*it( 'should work' , function( done ){
-          var initial = 'test';
-          new Promise(function( resolve , reject ){
-            resolve( initial );
-          })
-          .catch(function( err ){
-            console.log('this should be skipped');
-            return 'asdf';
-          })
-          .then(function( result ){
-            return result;
-          })
-          .then(function( result ){
-            console.log(result);
-            return result;
-          })
-          .then(function( result ){
-            throw new Error( result );
-          })
-          .catch(function( err ){
-            console.log(err);
-            return err.message;
-          })
-          .then(function( result ){
-            return new Promise(function( resolve ){
-              setTimeout( resolve , 1000 );
-            })
-            .then(function(){
-              return result;
-            });
-          })
-          .then(function( result ){
-            console.log(result);
-            expect( result ).to.equal( initial );
-            done();
-          })
-          .catch( done );
-      });
-      it( 'should work' , function( done ){
-        var initial = 'test';
-        var p = Promise.resolve( initial );
-        setTimeout(function(){
-          p.then(function( result ){
-            return new Promise(function( resolve ){
-              setTimeout( resolve , 500 );
-            })
-            .then(function(){
-              return result;
-            });
-          })
-          .then(function( result ){
-            console.log(result);
-            expect( result ).to.equal( initial );
-            done();
-          });
-        },500);
-        console.log(p);
-      });
-      it( 'should work' , function( done ){
-        var initial = 'test';
-        var p = new Promise();
-        p.then(function( result ){
-          console.log(result);
-          expect( result ).to.equal( initial );
-          done();
-        })
-        .catch( done );
-        setTimeout(function(){
-          p.resolve( initial );
-        },1000);
-      });
-return;*/
-      /*describe( 'Constructor' , function(){
+      describe( 'Constructor' , function(){
         it( 'should fail silently when an error is thrown' , function( done ){
           return new Promise(function( resolve , reject ){
             setTimeout( done );
             throw new Error( 'error' );
           });
         });
-      });*/
+      });
 
-      /*describe( '#then' , function(){
+      describe( '#then' , function(){
         it( 'should do nothing when resolve is called twice' , function( done ){
           new Promise(function( resolve , reject ){
             resolve();
@@ -245,9 +175,9 @@ return;*/
           })
           .catch( done );
         });
-      });*/
+      });
 
-      /*describe( '#catch' , function(){
+      describe( '#catch' , function(){
         it( 'should do nothing when reject is called twice' , function( done ){
           new Promise(function( resolve , reject ){
             reject();
@@ -330,31 +260,58 @@ return;*/
           })
           .catch( done );
         });
-      });*/
+      });
+
       describe( '::all' , function(){
-        /*describe( '#then' , function(){
-          it.skip( 'should support multiple collections' , function( done ){
-            var collections = [ 0 , 1 , 2 ];
-            collections.map(function( i ){
-              var subset = [( i ),( i + 1 ),( i + 2 )].map(function( j ){
-                return new Promise(function( resolve ){
-                  setTimeout(function(){
-                    resolve( j );
-                  });
+        it( 'should handle mixed types' , function( done ){
+          var initial = [ 0 , 1 , 2 , 3 , 4 ];
+          var arr = initial.map(function( i ){
+            var returnOriginal = Math.round(Math.random()) > 0;
+            return returnOriginal ? i : Promise.resolve( i );
+          });
+          Promise.all( arr ).then(function( result ){
+            expect( result ).to.eql( initial );
+            done();
+          })
+          .catch( done );
+        });
+        it( 'should asynchronously resolve an array of non-promises' , function( done ){
+          var initial = [ 0 , 1 , 2 ];
+          var error = new Error( 'test' );
+          var promise = Promise.all( initial ).then(function( result ){
+            expect( result ).to.eql( initial );
+            expect( promise ).to.be.ok;
+            throw error;
+          })
+          .catch(function( err ){
+            expect( err ).to.equal( error );
+            expect( promise ).to.be.ok;
+            done();
+          })
+          .catch( done );
+        });
+        it( 'should support nested collections' , function( done ){
+          var collections = [ 0 , 1 , 2 ];
+          var superset = collections.map(function( i ){
+            var subset = [( i ),( i + 1 ),( i + 2 )].map(function( j ){
+              return new Promise(function( resolve ){
+                setTimeout(function(){
+                  resolve( j );
                 });
               });
-              return Promise.all( subset );
             });
-            Promise.all( collections ).then(function( result ){
-              console.log(result);
-              expect( result ).to.have.length( collections.length );
-              result.forEach(function( subset ){
-                expect( subset ).to.have.length( collections.length );
-              });
-              done();
-            })
-            .catch( done );
+            return Promise.all( subset );
           });
+          Promise.all( superset ).then(function( result ){
+            expect( result ).to.have.length( collections.length );
+            result.forEach(function( subset ){
+              expect( subset ).to.have.length( collections.length );
+            });
+            done();
+          })
+          .catch( done );
+        });
+        describe( '#then' , function(){
           it( 'should be executed once all promises are resolved (asynchronous)' , function( done ){
             all_then( Promise ).then(function(){
               done();
@@ -541,9 +498,9 @@ return;*/
             })
             .catch( done );
           });
-        });*/
+        });
         describe( '#catch' , function(){
-          /*it( 'should be executed if a promise is rejected (asynchronous)' , function( done ){
+          it( 'should be executed if a promise is rejected (asynchronous)' , function( done ){
             all_catch( Promise ).then(function( reason ){
               expect( reason ).to.be.ok;
               done();
@@ -556,18 +513,16 @@ return;*/
               done();
             })
             .catch( done );
-          });*/
+          });
           it( 'should receive arguments from the first promise that was rejected (asynchronous)' , function( done ){
             all_catch( Promise ).then(_.spread(function( result , test ){
-              // console.log(result);
-              // expect( arguments ).to.have.length( 2 );
               expect( result ).to.be.ok;
               expect( result ).to.equal( test );
               done();
             }))
             .catch( done );;
           });
-          /*it( 'should receive arguments from the first promise that was rejected (synchronous)' , function( done ){
+          it( 'should receive arguments from the first promise that was rejected (synchronous)' , function( done ){
             all_catch( Promise , true ).then(_.spread(function( result , test ){
               expect( arguments ).to.have.length( 2 );
               expect( result ).to.be.ok;
@@ -598,10 +553,10 @@ return;*/
               done();
             })
             .catch( done );
-          });*/
+          });
         });
       });
-return;
+
       describe( '::race' , function(){
         describe( '#then' , function(){
           it( 'should be executed once the first promise is resolved (asynchronous)' , function( done ){
@@ -689,11 +644,10 @@ return;
 
   function all_catch( Promise , sync ){
     var count = 5,
-      target = [ 2 , 3 ],
+      target = [ 2 , 3 ][ Math.round(Math.random()) ],
       promises = [];
     function determine( i , resolve , reject ) {
-      if (target.indexOf( i ) >= 0) {
-        console.log(i);
+      if (target == i) {
         reject( i );
       }
       else {
@@ -710,14 +664,14 @@ return;
             else {
               setTimeout(function(){
                 determine( i , resolve , reject );
-              });
+              },i);
             }
           });
         }( i ))
       );
     }
     return Promise.all( promises ).catch(function( result ){
-      return [ result , target[0] ];
+      return [ result , target ];
     });
   }
 
@@ -737,7 +691,7 @@ return;
               var t = (target.indexOf( i ) >= 0 ? 1 : count * 10);
               setTimeout(function(){
                 resolve( i );
-              }, t );
+              },t);
             }
           });
         }( i ))

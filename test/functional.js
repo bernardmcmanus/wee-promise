@@ -107,7 +107,7 @@
             done();
           });
         });
-        it.skip( 'when a promise list WITH individual catch handlers is rejected' , function( done ){
+        it( 'when a promise list WITH individual catch handlers is rejected' , function( done ){
           var routes = [],
           routesFinal = [
             [ '0-0' , '0-1' ],
@@ -144,7 +144,7 @@
           })
           .catch( done );
         });
-        it.skip( 'when a promise list chain WITHOUT individual catch handlers is rejected' , function( done ){
+        it( 'when a promise list chain WITHOUT individual catch handlers is rejected' , function( done ){
           var routes = [],
           routesFinal = [
             [ '0-0' , '0-1' , '0-2' ],
@@ -316,17 +316,7 @@
           }
         });
       });
-    });
-  }));
 
-  [
-    [ ES6Promise.Promise , 'ES6Promise' ],
-    [ Q.promise , 'Q.promise' ],
-    [ window.Promise , 'window.Promise' ]
-  ]
-  .forEach(_.spread(function( Promise , name ){
-    if (!Promise) return;
-    describe( name , function(){
       describe( 'A+ Compatibility' , function(){
         it( 'should handle asynchronous operations' , function(){
           var start = Date.now(),
