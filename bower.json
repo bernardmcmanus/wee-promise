@@ -1,19 +1,12 @@
 {
   "name": "wee-promise",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "homepage": "https://github.com/elnarddogg/wee-promise",
   "authors": [
     "Bernard McManus"
   ],
   "description": "An ultra light Promises / A+ implementation",
   "main": "dist/wee-promise.js",
-  "devDependencies": {
-    "chai": "^3.4.2",
-    "es6-promise": "^3.0.2",
-    "lodash": "^3.10.1",
-    "mocha": "^2.3.4",
-    "q": "1.0.1"
-  },
   "keywords": [
     "promise",
     "A+",

@@ -36,73 +36,77 @@ module.exports = function( grunt ) {
         ]
       }
     },
-    concat: {
+    wrap: {
       options: {
-        banner: '<%= pkg.config.banner %>\n',
-        stripBanners: {
-          options: { block: true }
-        }
+        args: (function(){
+          var args = [
+            'setTimeout',
+            'TypeError',
+            ['UNDEFINED']
+          ];
+          var leadingWrapArgs = args.map(function( arg ){
+            return Array.isArray( arg ) ? arg.shift() : arg;
+          })
+          .filter(function( arg ){
+            return !!arg;
+          });
+          var trailingWrapArgs = args.map(function( arg ){
+            return Array.isArray( arg ) ? arg.pop() : arg;
+          })
+          .filter(function( arg ){
+            return !!arg;
+          });
+          return {
+            leading: leadingWrapArgs,
+            trailing: trailingWrapArgs
+          };
+        }()),
+        wrapper: [
+          [
+              '(function(<%= wrap.options.args.leading %>){',
+                '"use strict";'
+          ]
+          .join('\n'),
+          [
+              'if (typeof exports == "object") {',
+                'module.exports = WeePromise;',
+              '} else {',
+                'self.WeePromise = WeePromise;',
+              '}',
+            '}(<%= wrap.options.args.trailing %>));'
+          ]
+          .join('\n')
+        ]
       },
       dist: {
-        files: {
-          'dist/<%= pkg.name %>.js': '<%= pkg.config.src %>'
-        }
+        files: { 'dist/<%= pkg.name %>.js': 'dist/<%= pkg.name %>.js' }
+      }
+    },
+    concat: {
+      tmp: {
+        files: { 'dist/<%= pkg.name %>.js': '<%= pkg.config.src %>' }
+      },
+      dist: {
+        options: { banner: '<%= pkg.config.banner %>\n' },
+        files: { 'dist/<%= pkg.name %>.js': 'dist/<%= pkg.name %>.js' }
       }
     },
     uglify: {
-      options: {
-        banner: '<%= pkg.config.banner %>'
-      },
       dist: {
-        files: {
-          'dist/<%= pkg.name %>.min.js': '<%= pkg.config.src %>'
-        }
+        options: { banner: '<%= pkg.config.banner %>' },
+        files: { 'dist/<%= pkg.name %>.min.js': 'dist/<%= pkg.name %>.js' }
       }
     },
-    connect: {
-      server: {
-        options: {
-          port: '<%= pkg.config.connect.port %>',
-          base: '<%= pkg.config.connect.base %>',
-          hostname: '<%= pkg.config.connect.hostname %>',
-          interrupt: true,
-          middleware: function( connect , options , middlewares ){
-            var Preprocessor = require( 'connect-preprocess' );
-            var Query = require( 'connect-query' );
-            grunt.config.set( 'query' , '{}' );
-            return [
-              Query(),
-              function( req , res , next ){
-                if (Object.keys( req.query ).length) {
-                  grunt.config.set( 'query' , JSON.stringify( req.query ));
-                }
-                next();
-              },
-              Preprocessor({
-                accept: [ 'html' ],
-                engine: grunt.config.process
-              })
-            ]
-            .concat( middlewares );
-          }
-        }
-      }
-    },
-    mocha_phantomjs: {
-      dist: {
-        options: {
-          urls: [
-            'http://localhost:<%= pkg.config.connect.port %>/test/index.html?test=unit',
-            'http://localhost:<%= pkg.config.connect.port %>/test/index.html?test=functional'
-          ]
-        }
+    watch: {
+      options: { interrupt: true },
+      all: {
+        files: '<%= pkg.config.src %>',
+        tasks: [ 'build' , 'test' ]
       }
     },
     'release-describe': {
       dist: {
-        files: {
-          'dist/<%= pkg.name %>.min.js': 'dist/<%= pkg.name %>.js'
-        }
+        files: { 'dist/<%= pkg.name %>.min.js': 'dist/<%= pkg.name %>.js' }
       }
     }
   });
@@ -114,9 +118,9 @@ module.exports = function( grunt ) {
     'grunt-contrib-clean',
     'grunt-contrib-concat',
     'grunt-contrib-uglify',
-    'grunt-contrib-connect',
-    'grunt-mocha-phantomjs',
+    'grunt-contrib-watch',
     'grunt-update-json',
+    'grunt-wrap',
     'grunt-gitinfo'
   ]
   .forEach( grunt.loadNpmTasks );
@@ -125,23 +129,30 @@ module.exports = function( grunt ) {
     'build',
     'test',
     'update_json',
+    'uglify',
     'release-describe'
   ]);
 
   grunt.registerTask( 'build' , [
     'clean',
     'gitinfo',
-    'concat',
-    'uglify'
+    'concat:tmp',
+    'wrap',
+    'concat:dist'
   ]);
 
-  grunt.registerTask( 'test' , [
-    'connect',
-    'mocha_phantomjs'
-  ]);
-
-  grunt.registerTask( 'debug' , function(){
-    grunt.config.set( 'connect.server.options.keepalive' , true );
-    grunt.task.run( 'connect' );
+  grunt.registerTask( 'test' , function(){
+    try {
+      grunt.task.requires( 'build' );
+    }
+    catch( err ){
+      grunt.task.run( 'build' );
+    }
+    grunt.task.run( 'a-plus' );
   });
+
+  grunt.registerTask( 'debug' , [
+    'test',
+    'watch'
+  ]);
 };
