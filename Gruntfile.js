@@ -9,6 +9,11 @@ module.exports = function( grunt ) {
     }
   });
 
+  // don't strip debugging code for certain tasks
+  if (process.argv.indexOf( 'test' ) > 0 || process.argv.indexOf( 'debug' ) > 0) {
+    grunt.option( 'nostrip' , true );
+  }
+
   grunt.initConfig({
     pkg: grunt.file.readJSON( 'package.json' ),
     gitinfo: {},
@@ -40,6 +45,7 @@ module.exports = function( grunt ) {
       options: {
         args: (function(){
           var args = [
+            'Object',
             'setTimeout',
             'TypeError',
             ['UNDEFINED']
@@ -91,6 +97,15 @@ module.exports = function( grunt ) {
         files: { 'dist/<%= pkg.name %>.js': 'dist/<%= pkg.name %>.js' }
       }
     },
+    strip_code: {
+      options: {
+        start_comment: '{debug}',
+        end_comment: '{/debug}'
+      },
+      dist: {
+        files: { 'dist/<%= pkg.name %>.js': 'dist/<%= pkg.name %>.js' }
+      }
+    },
     uglify: {
       dist: {
         options: { banner: '<%= pkg.config.banner %>' },
@@ -101,7 +116,46 @@ module.exports = function( grunt ) {
       options: { interrupt: true },
       all: {
         files: '<%= pkg.config.src %>',
-        tasks: [ 'build' , 'test' ]
+        tasks: [ 'build' , '_test' ]
+      }
+    },
+    connect: {
+      server: {
+        options: {
+          port: '<%= pkg.config.connect.port %>',
+          base: '<%= pkg.config.connect.base %>',
+          hostname: '<%= pkg.config.connect.hostname %>',
+          interrupt: true,
+          middleware: function( connect , options , middlewares ){
+            var Preprocessor = require( 'connect-preprocess' );
+            var Query = require( 'connect-query' );
+            grunt.config.set( 'query' , '{}' );
+            return [
+              Query(),
+              function( req , res , next ){
+                if (Object.keys( req.query ).length) {
+                  grunt.config.set( 'query' , JSON.stringify( req.query ));
+                }
+                next();
+              },
+              Preprocessor({
+                accept: [ 'html' ],
+                engine: grunt.config.process
+              })
+            ]
+            .concat( middlewares );
+          }
+        }
+      }
+    },
+    mocha_phantomjs: {
+      dist: {
+        options: {
+          urls: [
+            'http://localhost:<%= pkg.config.connect.port %>/test/index.html?test=unit',
+            'http://localhost:<%= pkg.config.connect.port %>/test/index.html?test=functional'
+          ]
+        }
       }
     },
     'release-describe': {
@@ -120,6 +174,11 @@ module.exports = function( grunt ) {
     'grunt-contrib-uglify',
     'grunt-contrib-watch',
     'grunt-update-json',
+    'grunt-strip-code',
+    
+    'grunt-contrib-connect',
+    'grunt-mocha-phantomjs',
+
     'grunt-wrap',
     'grunt-gitinfo'
   ]
@@ -135,24 +194,37 @@ module.exports = function( grunt ) {
 
   grunt.registerTask( 'build' , [
     'clean',
+    'jshint',
     'gitinfo',
     'concat:tmp',
     'wrap',
-    'concat:dist'
+    'concat:dist',
+    'strip'
   ]);
 
-  grunt.registerTask( 'test' , function(){
+  grunt.registerTask( 'debug' , [
+    'test',
+    'watch'
+  ]);
+
+  grunt.registerTask( 'test' , [
+    'connect',
+    '_test'
+  ]);
+
+  grunt.registerTask( '_test' , function(){
     try {
       grunt.task.requires( 'build' );
     }
     catch( err ){
       grunt.task.run( 'build' );
     }
-    grunt.task.run( 'a-plus' );
+    grunt.task.run([ 'a-plus' , 'mocha_phantomjs' ]);
   });
 
-  grunt.registerTask( 'debug' , [
-    'test',
-    'watch'
-  ]);
+  grunt.registerTask( 'strip' , function(){
+    if (!grunt.option( 'nostrip' )) {
+      grunt.task.run( 'strip_code' );
+    }
+  });
 };

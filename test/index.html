@@ -1,0 +1,30 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <title>Mocha</title>
+    <link rel="stylesheet" type="text/css" href="/bower_components/mocha/mocha.css" />
+    <script src="/bower_components/mocha/mocha.js"></script>
+    <script src="/bower_components/chai/chai.js"></script>
+    <script src="/bower_components/lodash/lodash.js"></script>
+    <script>
+      // Don't use MessageChannel in phantom
+      if (window._phantom) {
+        window.MessageChannel = undefined;
+      }
+    </script>
+    <script src="/<%= pkg.main %>"></script>
+  </head>
+  <body>
+    <div id="mocha"></div>
+  </body>
+  <script>
+    window.query = JSON.parse( '<%= query %>' );
+    window.expect = chai.expect;
+    mocha.setup( 'bdd' );
+    mocha.reporter( 'html' );
+    document.write( '<sc' + 'ript src="/test/' + query.test + '.js"></sc' + 'ript>' );
+  </script>
+  <script>mocha.run();</script>
+</html>
