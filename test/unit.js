@@ -302,19 +302,19 @@
     });
     describe( '#then' , function(){
       it( 'should be executed once all promises are resolved (asynchronous)' , function( done ){
-        all_then( Promise ).then(function(){
+        all_then().then(function(){
           done();
         })
         .catch( done );
       });
       it( 'should be executed once all promises are resolved (synchronous)' , function( done ){
-        all_then( Promise , true ).then(function(){
+        all_then( true ).then(function(){
           done();
         })
         .catch( done );
       });
       it( 'should receive a result array equal to the array of resolved promises (asynchronous)' , function( done ){
-        all_then( Promise ).then(_.spread(function( result , test ){
+        all_then().then(_.spread(function( result , test ){
           expect( arguments ).to.have.length( 2 );
           expect( result.length ).to.equal( test.length );
           expect( result ).to.eql( test );
@@ -323,7 +323,7 @@
         .catch( done );
       });
       it( 'should receive a result array equal to the array of resolved promises (synchronous)' , function( done ){
-        all_then( Promise , true ).then(_.spread(function( result , test ){
+        all_then( true ).then(_.spread(function( result , test ){
           expect( arguments ).to.have.length( 2 );
           expect( result.length ).to.equal( test.length );
           expect( result ).to.eql( test );
@@ -490,21 +490,21 @@
     });
     describe( '#catch' , function(){
       it( 'should be executed if a promise is rejected (asynchronous)' , function( done ){
-        all_catch( Promise ).then(function( reason ){
+        all_catch().then(function( reason ){
           expect( reason ).to.be.ok;
           done();
         })
         .catch( done );
       });
       it( 'should be executed if a promise is rejected (synchronous)' , function( done ){
-        return all_catch( Promise , true ).then(function( reason ){
+        return all_catch( true ).then(function( reason ){
           expect( reason ).to.be.ok;
           done();
         })
         .catch( done );
       });
       it( 'should receive arguments from the first promise that was rejected (asynchronous)' , function( done ){
-        all_catch( Promise ).then(_.spread(function( result , test ){
+        all_catch().then(_.spread(function( result , test ){
           expect( result ).to.be.ok;
           expect( result ).to.equal( test );
           done();
@@ -512,7 +512,7 @@
         .catch( done );;
       });
       it( 'should receive arguments from the first promise that was rejected (synchronous)' , function( done ){
-        all_catch( Promise , true ).then(_.spread(function( result , test ){
+        all_catch( true ).then(_.spread(function( result , test ){
           expect( arguments ).to.have.length( 2 );
           expect( result ).to.be.ok;
           expect( result ).to.equal( test );
@@ -548,19 +548,19 @@
   describe( '::race' , function(){
     describe( '#then' , function(){
       it( 'should be executed once the first promise is resolved (asynchronous)' , function( done ){
-        race_then( Promise ).then(function(){
+        race_then().then(function(){
           done();
         })
         .catch( done );
       });
       it( 'should be executed once the first promise is resolved (synchronous)' , function( done ){
-        race_then( Promise , true ).then(function(){
+        race_then( true ).then(function(){
           done();
         })
         .catch( done );
       });
       it( 'should receive arguments from the first promise that was resolved (asynchronous)' , function( done ){
-        race_then( Promise ).then(_.spread(function( result , test ){
+        race_then().then(_.spread(function( result , test ){
           expect( arguments ).to.have.length( 2 );
           expect( result ).to.equal( test );
           done();
@@ -568,7 +568,7 @@
         .catch( done );
       });
       it( 'should receive arguments from the first promise that was resolved (synchronous)' , function( done ){
-        race_then( Promise , true ).then(_.spread(function( result , test ){
+        race_then( true ).then(_.spread(function( result , test ){
           expect( arguments ).to.have.length( 2 );
           expect( result ).to.equal( test );
           done();
@@ -600,7 +600,7 @@
       });
     });
   });
-  function all_then( Promise , sync ){
+  function all_then( sync ){
     var i = 0,
       count = 5,
       promises = [],
@@ -626,7 +626,7 @@
       return [ result , test ];
     });
   }
-  function all_catch( Promise , sync ){
+  function all_catch( sync ){
     var count = 5,
       target = [ 2 , 3 ][ Math.round(Math.random()) ],
       promises = [];
@@ -658,7 +658,7 @@
       return [ result , target ];
     });
   }
-  function race_then( Promise , sync ){
+  function race_then( sync ){
     var count = 5,
       target = [ 2 , 3 ],
       test = sync ? 0 : target[0],
