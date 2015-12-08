@@ -1,14 +1,39 @@
+/* {debug} */
+  if (typeof require == 'function') {
+    var assert = require( 'assert' );
+    var colors = require( 'colors' );
+    /* jshint -W082 */
+    function logError( err ){
+      try {
+        var trace = err.stack || err.message || err.toString();
+        var message = trace.match( /(.+)/ )[1];
+        var stack = trace.match( /[^\n]+((.|\n)+)/i )[1];
+        console.log( '\n' + message.red + stack.gray );
+      }
+      catch( error ) {
+        console.log( error.stack );
+      }
+    }
+  }
+/* {/debug} */
+
 var RESOLVED = 1;
 var REJECTED = 2;
-var THEN = 'then';
-var FAIL = 'fail';
 
 function WeePromise( resolver ){
-  var that = this;
-  that._queue = Queue();
-  that._inprog = false;
-  that.resolve = getResolverArg( that , THEN );
-  that.reject = getResolverArg( that , FAIL );
+  var that = this,
+    one = getSingleCallable(function( action , value ){
+      action( that , value );
+    });
+  that._stack = new Stack();
+  that.resolve = function( value ){
+    one( $resolve , value );
+    return that;
+  };
+  that.reject = function( reason ){
+    one( $reject , reason );
+    return that;
+  };
   if (resolver) {
     try {
       resolver( that.resolve , that.reject );
@@ -19,65 +44,58 @@ function WeePromise( resolver ){
   }
 }
 
-WeePromise.prototype._add = function( type , func ){
-  var that = this;
-  if (isFunction( func )) {
-    that._queue.push( type , func );
-  }
-  return that;
-};
-
-WeePromise.prototype._exec = function( type , result ){
-  var that = this,
-    queue = that._queue,
-    func;
-  that._inprog = true;
-  try {
-    switch (type) {
-      case THEN:
-        while (func = queue.next( type )) {
-          result = func.call( UNDEFINED , result );
-          if (result == that){
-            throw new TypeError( 'A promise cannot be resolved with itself.' );
+WeePromise.prototype = {
+  constructor: WeePromise,
+  onresolved: function( value ){
+    return value;
+  },
+  onrejected: function( reason ){
+    throw reason;
+  },
+  _flush: function(){
+    var that = this,
+      state = that._state;
+    if (state) {
+      asap(function(){
+        (function flush(){
+          var enqueued = that._stack.get();
+          if (enqueued) {
+            var fn = (state == RESOLVED ? enqueued.onresolved : enqueued.onrejected);
+            try {
+              $resolve( enqueued , fn( that.value ));
+            }
+            catch( err ){
+              /* {debug} */
+                if (typeof assert != 'undefined' && err instanceof assert.AssertionError) {
+                  logError( err );
+                }
+                else if (typeof chai != 'undefined' && err instanceof chai.AssertionError) {
+                  console.log( err );
+                }
+              /* {/debug} */
+              $reject( enqueued , err );
+            }
+            flush();
           }
-          if (isThenable( result )) {
-            return handleThenable( that , result );
-          }
-        }
-        that._state = RESOLVED;
-      break;
-      case FAIL:
-        func = queue.next( type );
-        if (func) {
-          result = func.call( UNDEFINED , result );
-          if (isThenable( result )) {
-            return handleThenable( that , result );
-          }
-          return that._exec( THEN , result );
-        }
-        that._state = REJECTED;
-      break;
+        }());
+      });
     }
+  },
+  then: function( onresolved , onrejected ){
+    var that = this,
+      promise = new WeePromise();
+    if (isFunction( onresolved ))
+      promise.onresolved = onresolved;
+    if (isFunction( onrejected ))
+      promise.onrejected = onrejected;
+    that._stack.put( promise );
+    that._flush();
+    return promise;
+  },
+  catch: function( onrejected ){
+    return this.then( UNDEFINED , onrejected );
   }
-  catch( err ) {
-    return that._exec( FAIL , err );
-  }
-  that.result = result;
-  that._inprog = false;
-  return that;
 };
-
-WeePromise.prototype.then = function( onresolve , onreject ){
-  return this
-    ._add( THEN , onresolve )
-    .fail( onreject );
-};
-
-WeePromise.prototype.fail = function( func ){
-  return this._add( FAIL , func );
-};
-
-WeePromise.prototype.catch = WeePromise.prototype.fail;
 
 WeePromise.resolve = function( result ){
   return new WeePromise().resolve( result );
@@ -88,71 +106,106 @@ WeePromise.reject = function( reason ){
 };
 
 WeePromise.all = function( collection ){
-  return new WeePromise(function( resolve , reject ){
-    var allResult = [],
-      got = 0,
-      need = collection.length;
-    function handleResult( result , i ){
-      allResult[i] = result;
+  var promise = new WeePromise(),
+    result = [],
+    got = 0,
+    need = collection.length;
+  collection.forEach(function( child , i ){
+    unwrap( child , function( state , value ){
       got++;
-      if (got == need) {
-        resolve( allResult );
+      result[i] = value;
+      if (state == REJECTED) {
+        promise.reject( value );
       }
-    }
-    collection.forEach(function( child , i ){
-      if (isThenable( child )) {
-        child.then(function( result ){
-          handleResult( result , i );
-        })
-        .fail(function( reason ){
-          reject( reason );
-        });
-      }
-      else {
-        handleResult( child , i );
+      else if (got == need) {
+        promise.resolve( result );
       }
     });
   });
+  return promise;
 };
 
 WeePromise.race = function( collection ){
-  return new WeePromise(function( resolve , reject ){
-    collection.forEach(function( child ){
-      if (isThenable( child )) {
-        child.then( resolve ).fail( reject );
-      }
-      else {
-        resolve( child );
-      }
+  var promise = new WeePromise();
+  collection.forEach(function( child ){
+    unwrap( child , function( state , value ){
+      setState( promise , state , value );
     });
   });
+  return promise;
 };
 
-function getResolverArg( context , type ){
-  return function( result ){
-    asap(function(){
-      if (!context._state) {
-        context._exec( type , result );
-      }
+function $resolve( context , value ){
+  if (value === context) {
+    $reject( context , new TypeError( 'A promise cannot be resolved with itself.' ));
+  }
+  else {
+    unwrap( value , function( state , value ){
+      setState( context , state , value );
     });
-    return context;
+  }
+}
+
+function $reject( context , reason ){
+  setState( context , REJECTED , reason );
+}
+
+function setState( context , state , value ){
+  if (context._state != state) {
+    context.value = value;
+    context._state = state;
+    context._flush();
+  }
+}
+
+function unwrap( value , cb ){
+  if (value instanceof WeePromise && value._state) {
+    cb( value._state , value.value );
+  }
+  else if (isObject( value ) || isFunction( value )) {
+    var then,
+      one = getSingleCallable(function( fn , args ){
+        fn.apply( UNDEFINED , args );
+      });
+    try {
+      then = value.then;
+      if (isFunction( then )) {
+        then.call( value,
+          function( v ){
+            one( unwrap , [ v , cb ]);
+          },
+          function( r ){
+            one( cb , [ REJECTED , r ]);
+          }
+        );
+      }
+      else {
+        one( cb , [ RESOLVED , value ]);
+      }
+    }
+    catch( err ){
+      one( cb , [ REJECTED , err ]);
+    }
+  }
+  else {
+    cb( RESOLVED , value );
+  }
+}
+
+function getSingleCallable( cb ){
+  var called;
+  return function(){
+    if (!called) {
+      cb.apply( UNDEFINED , arguments );
+      called = true;
+    }
   };
+}
+
+function isObject( subject ){
+  return subject && typeof subject == 'object';
 }
 
 function isFunction( subject ){
   return typeof subject == 'function';
-}
-
-function isThenable( subject ){
-  return !!(subject && subject.then);
-}
-
-function handleThenable( context , thenable ){
-  thenable.then(function( result ){
-    context._exec( THEN , result );
-  })
-  .fail(function( result ){
-    context._exec( FAIL , result );
-  });
-  return context;
 }

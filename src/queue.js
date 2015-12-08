@@ -1,31 +1,22 @@
-function Queue(){
-  var stack = [],
-    length = 0,
-    index = 0,
-    that = {
-      push: function( type , func ){
-        stack[length] = { type: type, func: func };
-        length++;
-      },
-      pull: function(){
-        var arg = stack[index];
-        stack[index] = UNDEFINED;
-        index++;
-        if (index == length) {
-          stack.length = index = length = 0;
-        }
-        return arg;
-      },
-      next: function( type ){
-        var i = index, element;
-        while (i < length) {
-          element = that.pull();
-          if (element && element.type == type) {
-            return element.func;
-          }
-          i++;
-        }
-      }
-    };
-  return that;
+function Stack(){
+  var that = this;
+  that.q = [];
+  that.i = 0;
+  that.len = 0;
 }
+
+Stack.prototype.put = function( element ){
+  var that = this;
+  that.q[that.len] = element;
+  that.len++;
+};
+
+Stack.prototype.get = function(){
+  var that = this,
+    element = that.q[that.i];
+    that.i++;
+    if (that.i == that.len) {
+      that.q.length = that.i = that.len = 0;
+    }
+    return element;
+};
