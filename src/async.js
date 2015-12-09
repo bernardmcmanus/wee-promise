@@ -1,4 +1,4 @@
-var asap = (function(){
+WeePromise.async = (function(){
   var _undefined = '' + UNDEFINED;
   if (typeof setImmediate != _undefined) {
     return setImmediate;
@@ -12,5 +12,7 @@ var asap = (function(){
       channel.port2.postMessage( 0 );
     };
   }
-  return setTimeout;
+  return function( cb ){
+    setTimeout( cb );
+  };
 }());
