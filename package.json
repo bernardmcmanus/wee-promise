@@ -42,6 +42,7 @@
   "homepage": "https://github.com/elnarddogg/wee-promise",
   "devDependencies": {
     "bluebird": "^3.0.5",
+    "bower": "^1.7.0",
     "colors": "^1.1.2",
     "connect-preprocess": "^1.0.0",
     "connect-query": "^0.2.0",
