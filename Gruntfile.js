@@ -14,6 +14,9 @@ module.exports = function( grunt ) {
     grunt.option( 'nostrip' , true );
   }
 
+  // always print a stack trace if something goes wrong
+  grunt.option( 'stack' , true );
+
   grunt.initConfig({
     pkg: grunt.file.readJSON( 'package.json' ),
     gitinfo: {},
@@ -21,7 +24,8 @@ module.exports = function( grunt ) {
       all: [ '<%= pkg.config.src %>' ]
     },
     clean: {
-      all: [ 'dist' ]
+      compiled: [ 'compiled' ],
+      dist: [ 'dist' ]
     },
     update_json: {
       options: {
@@ -45,9 +49,6 @@ module.exports = function( grunt ) {
       options: {
         args: (function(){
           var args = [
-            'Object',
-            'setTimeout',
-            'TypeError',
             ['UNDEFINED']
           ];
           var leadingWrapArgs = args.map(function( arg ){
@@ -84,17 +85,23 @@ module.exports = function( grunt ) {
           .join('\n')
         ]
       },
-      dist: {
-        files: { 'dist/<%= pkg.name %>.js': 'dist/<%= pkg.name %>.js' }
+      compiled: {
+        files: {
+          'compiled/<%= pkg.name %>.js': 'compiled/<%= pkg.name %>.js'
+        }
       }
     },
     concat: {
       tmp: {
-        files: { 'dist/<%= pkg.name %>.js': '<%= pkg.config.src %>' }
+        files: {
+          'compiled/<%= pkg.name %>.js': '<%= pkg.config.src %>'
+        }
       },
-      dist: {
+      compiled: {
         options: { banner: '<%= pkg.config.banner %>\n' },
-        files: { 'dist/<%= pkg.name %>.js': 'dist/<%= pkg.name %>.js' }
+        files: {
+          'compiled/<%= pkg.name %>.js': 'compiled/<%= pkg.name %>.js'
+        }
       }
     },
     strip_code: {
@@ -102,14 +109,28 @@ module.exports = function( grunt ) {
         start_comment: '{debug}',
         end_comment: '{/debug}'
       },
-      dist: {
-        files: { 'dist/<%= pkg.name %>.js': 'dist/<%= pkg.name %>.js' }
+      compiled: {
+        files: {
+          'compiled/<%= pkg.name %>.js': 'compiled/<%= pkg.name %>.js'
+        }
       }
     },
     uglify: {
-      dist: {
+      compiled: {
         options: { banner: '<%= pkg.config.banner %>' },
-        files: { 'dist/<%= pkg.name %>.min.js': 'dist/<%= pkg.name %>.js' }
+        files: {
+          'compiled/<%= pkg.name %>.min.js': 'compiled/<%= pkg.name %>.js'
+        }
+      }
+    },
+    copy: {
+      dist: {
+        files: [{
+          expand: true,
+          src: '*',
+          dest: 'dist/',
+          cwd: 'compiled/'
+        }]
       }
     },
     watch: {
@@ -149,7 +170,7 @@ module.exports = function( grunt ) {
       }
     },
     mocha_phantomjs: {
-      dist: {
+      test: {
         options: {
           urls: [
             'http://localhost:<%= pkg.config.connect.port %>/test/index.html?test=unit',
@@ -160,7 +181,9 @@ module.exports = function( grunt ) {
     },
     'release-describe': {
       dist: {
-        files: { 'dist/<%= pkg.name %>.min.js': 'dist/<%= pkg.name %>.js' }
+        files: {
+          'dist/<%= pkg.name %>.min.js': 'dist/<%= pkg.name %>.js'
+        }
       }
     }
   });
@@ -175,12 +198,11 @@ module.exports = function( grunt ) {
     'grunt-contrib-watch',
     'grunt-update-json',
     'grunt-strip-code',
-    
     'grunt-contrib-connect',
     'grunt-mocha-phantomjs',
-
     'grunt-wrap',
-    'grunt-gitinfo'
+    'grunt-gitinfo',
+    'grunt-contrib-copy'
   ]
   .forEach( grunt.loadNpmTasks );
 
@@ -189,27 +211,30 @@ module.exports = function( grunt ) {
     'test',
     'update_json',
     'uglify',
+    'clean:dist',
+    'copy',
+    'clean:compiled',
     'release-describe'
   ]);
 
   grunt.registerTask( 'build' , [
-    'clean',
+    'clean:compiled',
     'jshint',
     'gitinfo',
     'concat:tmp',
     'wrap',
-    'concat:dist',
+    'concat:compiled',
     'strip'
-  ]);
-
-  grunt.registerTask( 'debug' , [
-    'test',
-    'watch'
   ]);
 
   grunt.registerTask( 'test' , [
     'connect',
     '_test'
+  ]);
+
+  grunt.registerTask( 'debug' , [
+    'test',
+    'watch'
   ]);
 
   grunt.registerTask( '_test' , function(){
@@ -219,7 +244,7 @@ module.exports = function( grunt ) {
     catch( err ){
       grunt.task.run( 'build' );
     }
-    grunt.task.run([ 'a-plus' , 'mocha_phantomjs' ]);
+    grunt.task.run([ 'mocha_phantomjs' , 'a-plus' ]);
   });
 
   grunt.registerTask( 'strip' , function(){

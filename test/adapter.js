@@ -1,4 +1,4 @@
-var WeePromise = require( './dist/wee-promise' );
+var WeePromise = require( '../compiled/wee-promise' );
 module.exports = {
   resolved: function( value ){
     return new WeePromise(function( resolve ){
