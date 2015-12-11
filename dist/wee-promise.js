@@ -1,4 +1,4 @@
-/*! wee-promise - 1.0.0 - Bernard McManus - 20c2c77 - 2015-12-09 */
+/*! wee-promise - 1.0.0 - Bernard McManus - 562506d - 2015-12-11 */
 
 (function(UNDEFINED){
 "use strict";
@@ -163,15 +163,11 @@ function setState( context , state , value ){
 
 function unwrap( value , cb ){
   if (value instanceof WeePromise && value._state) {
-    // fulfilled WeePromise instances
+    // resolved WeePromise instances
     cb( value._state , value._value );
   }
-  else if (!isObject( value ) && !isFunction( value )) {
-    // primitives
-    cb( RESOLVED , value );
-  }
-  else {
-    // all other objects and functions
+  else if (isObject( value ) || isFunction( value )) {
+    // objects and functions
     var then,
       one = getSingleCallable(function( fn , args ){
         fn.apply( UNDEFINED , args );
@@ -195,6 +191,10 @@ function unwrap( value , cb ){
     catch( err ){
       one( cb , [ REJECTED , err ]);
     }
+  }
+  else {
+    // all other values
+    cb( RESOLVED , value );
   }
 }
 

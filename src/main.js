@@ -162,15 +162,11 @@ function setState( context , state , value ){
 
 function unwrap( value , cb ){
   if (value instanceof WeePromise && value._state) {
-    // fulfilled WeePromise instances
+    // resolved WeePromise instances
     cb( value._state , value._value );
   }
-  else if (!isObject( value ) && !isFunction( value )) {
-    // primitives
-    cb( RESOLVED , value );
-  }
-  else {
-    // all other objects and functions
+  else if (isObject( value ) || isFunction( value )) {
+    // objects and functions
     var then,
       one = getSingleCallable(function( fn , args ){
         fn.apply( UNDEFINED , args );
@@ -194,6 +190,10 @@ function unwrap( value , cb ){
     catch( err ){
       one( cb , [ REJECTED , err ]);
     }
+  }
+  else {
+    // all other values
+    cb( RESOLVED , value );
   }
 }
 
