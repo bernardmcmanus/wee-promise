@@ -17,6 +17,7 @@
   }
 /* {/debug} */
 
+var PENDING = 0;
 var RESOLVED = 1;
 var REJECTED = 2;
 
@@ -25,6 +26,7 @@ function WeePromise( resolver ){
     one = getSingleCallable(function( action , value ){
       action( that , value );
     });
+  that._state = PENDING;
   that._stack = new Stack();
   that.resolve = function( value ){
     one( $resolve , value );

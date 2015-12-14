@@ -1,4 +1,4 @@
-/*! wee-promise - 1.0.0 - Bernard McManus - 562506d - 2015-12-11 */
+/*! wee-promise - 1.0.1 - Bernard McManus - 06840c4 - 2015-12-14 */
 
 (function(UNDEFINED){
 "use strict";
@@ -26,6 +26,7 @@ Stack.prototype.get = function(){
 };
 
 
+var PENDING = 0;
 var RESOLVED = 1;
 var REJECTED = 2;
 
@@ -34,6 +35,7 @@ function WeePromise( resolver ){
     one = getSingleCallable(function( action , value ){
       action( that , value );
     });
+  that._state = PENDING;
   that._stack = new Stack();
   that.resolve = function( value ){
     one( $resolve , value );
