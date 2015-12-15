@@ -1,4 +1,4 @@
-/*! wee-promise - 1.0.1 - Bernard McManus - 06840c4 - 2015-12-14 */
+/*! wee-promise - 1.0.2 - Bernard McManus - 9916053 - 2015-12-15 */
 
 (function(UNDEFINED){
 "use strict";
@@ -19,7 +19,7 @@ Stack.prototype.get = function(){
   var that = this,
     element = that.q[that.i];
     that.i++;
-    if (that.i == that.len) {
+    if (that.i >= that.len) {
       that.q.length = that.i = that.len = 0;
     }
     return element;
