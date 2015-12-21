@@ -1,6 +1,6 @@
 {
   "name": "wee-promise",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "An ultra light Promises / A+ implementation",
   "main": "dist/wee-promise.js",
   "scripts": {
@@ -11,8 +11,8 @@
   "config": {
     "src": [
       "src/stack.js",
-      "src/main.js",
-      "src/async.js"
+      "src/async.js",
+      "src/main.js"
     ],
     "banner": "/*! <%= pkg.name %> - <%= pkg.version %> - <%= pkg.author.name %> - <%= grunt.config.data.gitinfo.local.branch.current.shortSHA %> - <%= grunt.template.today('yyyy-mm-dd') %> */\n",
     "connect": {
@@ -62,6 +62,7 @@
     "grunt-update-json": "^0.2.1",
     "grunt-wrap": "^0.3.0",
     "intercept-stdout": "^0.1.2",
-    "promises-aplus-tests": "^2.1.1"
+    "promises-aplus-tests": "^2.1.1",
+    "urlrouter": "^0.5.4"
   }
 }

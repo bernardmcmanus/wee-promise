@@ -24,7 +24,7 @@
     window.expect = chai.expect;
     mocha.setup( 'bdd' );
     mocha.reporter( 'html' );
-    document.write( '<sc' + 'ript src="/test/' + query.test + '.js"></sc' + 'ript>' );
   </script>
+  <script src="<%= test_src %>"></script>
   <script>mocha.run();</script>
 </html>

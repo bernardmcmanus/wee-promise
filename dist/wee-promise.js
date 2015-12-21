@@ -1,7 +1,8 @@
-/*! wee-promise - 1.0.2 - Bernard McManus - 9916053 - 2015-12-15 */
+/*! wee-promise - 1.0.3 - Bernard McManus - c89a629 - 2015-12-21 */
 
-(function(UNDEFINED){
+(function(global,UNDEFINED){
 "use strict";
+
 function Stack(){
   var that = this;
   that.q = [];
@@ -25,10 +26,30 @@ Stack.prototype.get = function(){
     return element;
 };
 
+var asyncProvider;
 
-var PENDING = 0;
-var RESOLVED = 1;
-var REJECTED = 2;
+if (global.setImmediate) {
+  asyncProvider = setImmediate;
+}
+else if (global.MessageChannel) {
+  asyncProvider = function( cb ){
+    var channel = new MessageChannel();
+    channel.port1.onmessage = cb;
+    channel.port2.postMessage( 0 );
+  };
+}
+else {
+  asyncProvider = setTimeout;
+}
+
+WeePromise.async = function( cb ){
+  asyncProvider( cb );
+};
+
+
+var PENDING = 0,
+  RESOLVED = 1,
+  REJECTED = 2;
 
 function WeePromise( resolver ){
   var that = this,
@@ -69,14 +90,14 @@ WeePromise.prototype = {
     if (state) {
       WeePromise.async(function(){
         (function flush(){
-          var deferred = that._stack.get();
-          if (deferred) {
-            var fn = (state == RESOLVED ? deferred.onresolved : deferred.onrejected);
+          var promise = that._stack.get();
+          if (promise) {
+            var fn = (state == RESOLVED ? promise.onresolved : promise.onrejected);
             try {
-              $resolve( deferred , fn( that._value ));
+              $resolve( promise , fn( that._value ));
             }
             catch( err ){
-              $reject( deferred , err );
+              $reject( promise , err );
             }
             flush();
           }
@@ -86,16 +107,16 @@ WeePromise.prototype = {
   },
   then: function( onresolved , onrejected ){
     var that = this,
-      deferred = new WeePromise();
+      promise = new WeePromise();
     if (isFunction( onresolved )) {
-      deferred.onresolved = onresolved;
+      promise.onresolved = onresolved;
     }
     if (isFunction( onrejected )) {
-      deferred.onrejected = onrejected;
+      promise.onrejected = onrejected;
     }
-    that._stack.put( deferred );
+    that._stack.put( promise );
     that._flush();
-    return deferred;
+    return promise;
   },
   catch: function( onrejected ){
     return this.then( UNDEFINED , onrejected );
@@ -111,7 +132,7 @@ WeePromise.reject = function( reason ){
 };
 
 WeePromise.all = function( collection ){
-  var deferred = new WeePromise(),
+  var promise = new WeePromise(),
     result = [],
     got = 0,
     need = collection.length;
@@ -120,24 +141,24 @@ WeePromise.all = function( collection ){
       got++;
       result[i] = value;
       if (state == REJECTED) {
-        deferred.reject( value );
+        promise.reject( value );
       }
       else if (got == need) {
-        deferred.resolve( result );
+        promise.resolve( result );
       }
     });
   });
-  return deferred;
+  return promise;
 };
 
 WeePromise.race = function( collection ){
-  var deferred = new WeePromise();
+  var promise = new WeePromise();
   collection.forEach(function( child ){
     unwrap( child , function( state , value ){
-      setState( deferred , state , value );
+      setState( promise , state , value );
     });
   });
-  return deferred;
+  return promise;
 };
 
 function $resolve( context , value ){
@@ -165,7 +186,7 @@ function setState( context , state , value ){
 
 function unwrap( value , cb ){
   if (value instanceof WeePromise && value._state) {
-    // resolved WeePromise instances
+    // non-pending WeePromise instances
     cb( value._state , value._value );
   }
   else if (isObject( value ) || isFunction( value )) {
@@ -178,11 +199,11 @@ function unwrap( value , cb ){
       then = value.then;
       if (isFunction( then )) {
         then.call( value,
-          function( v ){
-            one( unwrap , [ v , cb ]);
+          function( _value ){
+            one( unwrap , [ _value , cb ]);
           },
-          function( r ){
-            one( cb , [ REJECTED , r ]);
+          function( _reason ){
+            one( cb , [ REJECTED , _reason ]);
           }
         );
       }
@@ -218,28 +239,9 @@ function isFunction( subject ){
   return typeof subject == 'function';
 }
 
-WeePromise.async = (function(){
-  var _undefined = '' + UNDEFINED;
-  if (typeof setImmediate != _undefined) {
-    return setImmediate;
-  }
-  else if (typeof MessageChannel != _undefined) {
-    return function( cb ){
-      var channel = new MessageChannel();
-      channel.port1.onmessage = function(){
-        cb();
-      };
-      channel.port2.postMessage( 0 );
-    };
-  }
-  return function( cb ){
-    setTimeout( cb );
-  };
-}());
-
 if (typeof exports == "object") {
 module.exports = WeePromise;
 } else {
-self.WeePromise = WeePromise;
+global.WeePromise = WeePromise;
 }
-}());
+}(this));

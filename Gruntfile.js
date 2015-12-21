@@ -49,6 +49,7 @@ module.exports = function( grunt ) {
       options: {
         args: (function(){
           var args = [
+            ['global','this'],
             ['UNDEFINED']
           ];
           var leadingWrapArgs = args.map(function( arg ){
@@ -69,16 +70,12 @@ module.exports = function( grunt ) {
           };
         }()),
         wrapper: [
-          [
-              '(function(<%= wrap.options.args.leading %>){',
-                '"use strict";'
-          ]
-          .join('\n'),
+          '(function(<%= wrap.options.args.leading %>){\n"use strict";\n',
           [
               'if (typeof exports == "object") {',
                 'module.exports = WeePromise;',
               '} else {',
-                'self.WeePromise = WeePromise;',
+                'global.WeePromise = WeePromise;',
               '}',
             '}(<%= wrap.options.args.trailing %>));'
           ]
@@ -149,16 +146,21 @@ module.exports = function( grunt ) {
           interrupt: true,
           middleware: function( connect , options , middlewares ){
             var Preprocessor = require( 'connect-preprocess' );
+            var Router = require( 'urlrouter' );
             var Query = require( 'connect-query' );
+            var parseUrl = require( 'url' ).parse;
             grunt.config.set( 'query' , '{}' );
             return [
               Query(),
-              function( req , res , next ){
-                if (Object.keys( req.query ).length) {
+              Router(function( app ) {
+                app.get( '/test/(unit|functional)\/?$' , function( req , res , next ){
+                  var type = parseUrl( req.url ).pathname.match( /\/test\/([^\/]+)/i )[1];
+                  req.url = '/test/index.html';
+                  grunt.config.set( 'test_src' , '/test/' + type + '.js' );
                   grunt.config.set( 'query' , JSON.stringify( req.query ));
-                }
-                next();
-              },
+                  next();
+                });
+              }),
               Preprocessor({
                 accept: [ 'html' ],
                 engine: grunt.config.process
@@ -173,8 +175,8 @@ module.exports = function( grunt ) {
       test: {
         options: {
           urls: [
-            'http://localhost:<%= pkg.config.connect.port %>/test/index.html?test=unit',
-            'http://localhost:<%= pkg.config.connect.port %>/test/index.html?test=functional'
+            'http://localhost:<%= pkg.config.connect.port %>/test/unit',
+            'http://localhost:<%= pkg.config.connect.port %>/test/functional'
           ]
         }
       }

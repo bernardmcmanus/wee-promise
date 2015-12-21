@@ -17,9 +17,9 @@
   }
 /* {/debug} */
 
-var PENDING = 0;
-var RESOLVED = 1;
-var REJECTED = 2;
+var PENDING = 0,
+  RESOLVED = 1,
+  REJECTED = 2;
 
 function WeePromise( resolver ){
   var that = this,
@@ -60,11 +60,11 @@ WeePromise.prototype = {
     if (state) {
       WeePromise.async(function(){
         (function flush(){
-          var deferred = that._stack.get();
-          if (deferred) {
-            var fn = (state == RESOLVED ? deferred.onresolved : deferred.onrejected);
+          var promise = that._stack.get();
+          if (promise) {
+            var fn = (state == RESOLVED ? promise.onresolved : promise.onrejected);
             try {
-              $resolve( deferred , fn( that._value ));
+              $resolve( promise , fn( that._value ));
             }
             catch( err ){
               /* {debug} */
@@ -75,7 +75,7 @@ WeePromise.prototype = {
                   console.log( err );
                 }
               /* {/debug} */
-              $reject( deferred , err );
+              $reject( promise , err );
             }
             flush();
           }
@@ -85,16 +85,16 @@ WeePromise.prototype = {
   },
   then: function( onresolved , onrejected ){
     var that = this,
-      deferred = new WeePromise();
+      promise = new WeePromise();
     if (isFunction( onresolved )) {
-      deferred.onresolved = onresolved;
+      promise.onresolved = onresolved;
     }
     if (isFunction( onrejected )) {
-      deferred.onrejected = onrejected;
+      promise.onrejected = onrejected;
     }
-    that._stack.put( deferred );
+    that._stack.put( promise );
     that._flush();
-    return deferred;
+    return promise;
   },
   catch: function( onrejected ){
     return this.then( UNDEFINED , onrejected );
@@ -110,7 +110,7 @@ WeePromise.reject = function( reason ){
 };
 
 WeePromise.all = function( collection ){
-  var deferred = new WeePromise(),
+  var promise = new WeePromise(),
     result = [],
     got = 0,
     need = collection.length;
@@ -119,24 +119,24 @@ WeePromise.all = function( collection ){
       got++;
       result[i] = value;
       if (state == REJECTED) {
-        deferred.reject( value );
+        promise.reject( value );
       }
       else if (got == need) {
-        deferred.resolve( result );
+        promise.resolve( result );
       }
     });
   });
-  return deferred;
+  return promise;
 };
 
 WeePromise.race = function( collection ){
-  var deferred = new WeePromise();
+  var promise = new WeePromise();
   collection.forEach(function( child ){
     unwrap( child , function( state , value ){
-      setState( deferred , state , value );
+      setState( promise , state , value );
     });
   });
-  return deferred;
+  return promise;
 };
 
 function $resolve( context , value ){
@@ -164,7 +164,7 @@ function setState( context , state , value ){
 
 function unwrap( value , cb ){
   if (value instanceof WeePromise && value._state) {
-    // resolved WeePromise instances
+    // non-pending WeePromise instances
     cb( value._state , value._value );
   }
   else if (isObject( value ) || isFunction( value )) {
@@ -177,11 +177,11 @@ function unwrap( value , cb ){
       then = value.then;
       if (isFunction( then )) {
         then.call( value,
-          function( v ){
-            one( unwrap , [ v , cb ]);
+          function( _value ){
+            one( unwrap , [ _value , cb ]);
           },
-          function( r ){
-            one( cb , [ REJECTED , r ]);
+          function( _reason ){
+            one( cb , [ REJECTED , _reason ]);
           }
         );
       }
