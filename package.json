@@ -1,6 +1,6 @@
 {
   "name": "wee-promise",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "An ultra light Promises / A+ implementation",
   "main": "dist/wee-promise.js",
   "scripts": {

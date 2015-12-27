@@ -8,12 +8,6 @@
     <script src="/bower_components/mocha/mocha.js"></script>
     <script src="/bower_components/chai/chai.js"></script>
     <script src="/bower_components/lodash/lodash.js"></script>
-    <script>
-      // Don't use MessageChannel in phantom
-      if (window._phantom) {
-        window.MessageChannel = undefined;
-      }
-    </script>
     <script src="/compiled/<%= pkg.name %>.js"></script>
   </head>
   <body>

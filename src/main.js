@@ -46,59 +46,60 @@ function WeePromise( resolver ){
   }
 }
 
-WeePromise.prototype = {
-  constructor: WeePromise,
-  onresolved: function( value ){
-    return value;
-  },
-  onrejected: function( reason ){
-    throw reason;
-  },
-  _flush: function(){
-    var that = this,
-      state = that._state;
-    if (state) {
-      WeePromise.async(function(){
-        (function flush(){
-          var promise = that._stack.get();
-          if (promise) {
-            var fn = (state == RESOLVED ? promise.onresolved : promise.onrejected);
-            try {
-              $resolve( promise , fn( that._value ));
-            }
-            catch( err ){
-              /* {debug} */
-                if (typeof assert != 'undefined' && err instanceof assert.AssertionError) {
-                  logError( err );
-                }
-                else if (typeof chai != 'undefined' && err instanceof chai.AssertionError) {
-                  console.log( err );
-                }
-              /* {/debug} */
-              $reject( promise , err );
-            }
-            flush();
+WeePromise.prototype.onresolved = function( value ){
+  return value;
+};
+
+WeePromise.prototype.onrejected = function( reason ){
+  throw reason;
+};
+
+WeePromise.prototype._flush = function(){
+  var that = this,
+    state = that._state;
+  if (state) {
+    WeePromise.async(function(){
+      (function flush(){
+        var promise = that._stack.get();
+        if (promise) {
+          var fn = (state == RESOLVED ? promise.onresolved : promise.onrejected);
+          try {
+            $resolve( promise , fn( that._value ));
           }
-        }());
-      });
-    }
-  },
-  then: function( onresolved , onrejected ){
-    var that = this,
-      promise = new WeePromise();
-    if (isFunction( onresolved )) {
-      promise.onresolved = onresolved;
-    }
-    if (isFunction( onrejected )) {
-      promise.onrejected = onrejected;
-    }
-    that._stack.put( promise );
-    that._flush();
-    return promise;
-  },
-  catch: function( onrejected ){
-    return this.then( UNDEFINED , onrejected );
+          catch( err ){
+            /* {debug} */
+              if (typeof assert != 'undefined' && err instanceof assert.AssertionError) {
+                logError( err );
+              }
+              else if (typeof chai != 'undefined' && err instanceof chai.AssertionError) {
+                console.log( err );
+              }
+            /* {/debug} */
+            $reject( promise , err );
+          }
+          flush();
+        }
+      }());
+    });
   }
+};
+
+WeePromise.prototype.then = function( onresolved , onrejected ){
+  var that = this,
+    promise = new WeePromise();
+  if (isFunction( onresolved )) {
+    promise.onresolved = onresolved;
+  }
+  if (isFunction( onrejected )) {
+    promise.onrejected = onrejected;
+  }
+  that._stack.put( promise );
+  that._flush();
+  return promise;
+};
+
+WeePromise.prototype.catch = function( onrejected ){
+  return this.then( UNDEFINED , onrejected );
 };
 
 WeePromise.resolve = function( result ){

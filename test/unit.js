@@ -1,7 +1,7 @@
 (function(){
   'use strict';
   var Promise = WeePromise;
-  describe( 'Constructor' , function(){
+  describe( '#constructor' , function(){
     it( 'should fail silently when an error is thrown' , function( done ){
       return new Promise(function( resolve , reject ){
         setTimeout( done );
@@ -597,6 +597,72 @@
           done();
         })
         .catch( done );
+      });
+    });
+  });
+  describe( '::async' , function(){
+    it( 'should always flush the internal stack sequentially' , function( done ){
+      var actual = [],
+        expected = (function( length ){
+          var arr = [];
+          for (var i = 0; i < length; i++) {
+            arr.push( i );
+          }
+          return arr;
+        }( 15 )),
+        enqueue = function( args ){
+          while (args.length) {
+            (function( arg ){
+              Promise.async(function(){
+                actual.push( arg );
+              });
+            }( args.shift() ));
+          }
+        };
+      Promise.async(function(){
+        enqueue([ 3 , 4 , 5 ]);
+        Promise.async(function(){
+          enqueue([ 9 , 10 , 11 ]);
+          Promise.async(function(){
+            Promise.async(function(){
+              Promise.async(function(){
+                enqueue([ 14 ]);
+              });
+              enqueue([ 13 ]);
+            });
+            enqueue([ 12 ]);
+          });
+        });
+        enqueue([ 6 , 7 , 8 ]);
+      });
+      enqueue([ 0 , 1 , 2 ]);
+      setTimeout(function(){
+        expect( actual ).to.eql( expected );
+        done();
+      });
+    });
+    it( 'should gracefully handle errors' , function( done ){
+      var gotCalls = 0,
+        $onerror = window.onerror;
+      window.onerror = function( message ){
+        if (!/test/.test( message )) {
+          $onerror.apply( window , arguments );
+        }
+        window.onerror = $onerror;
+      };
+      Promise.async(function(){
+        Promise.async(function(){
+          Promise.async(function(){
+            Promise.async(function(){
+              expect( gotCalls ).to.equal( 2 );
+              done();
+            });
+            gotCalls++;
+          });
+          throw new Error( 'test' );
+          gotCalls++;
+        });
+        gotCalls++;
       });
     });
   });

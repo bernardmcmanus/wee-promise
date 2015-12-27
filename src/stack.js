@@ -14,9 +14,9 @@ Stack.prototype.put = function( element ){
 Stack.prototype.get = function(){
   var that = this,
     element = that.q[that.i];
-    that.i++;
-    if (that.i >= that.len) {
-      that.q.length = that.i = that.len = 0;
-    }
-    return element;
+  that.i++;
+  if (that.i >= that.len) {
+    that.q.length = that.i = that.len = 0;
+  }
+  return element;
 };

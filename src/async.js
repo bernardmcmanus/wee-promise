@@ -4,11 +4,21 @@ if (global.setImmediate) {
   asyncProvider = setImmediate;
 }
 else if (global.MessageChannel) {
-  asyncProvider = function( cb ){
-    var channel = new MessageChannel();
-    channel.port1.onmessage = cb;
-    channel.port2.postMessage( 0 );
-  };
+  asyncProvider = (function(){
+    var stack = new Stack(),
+      channel = new MessageChannel();
+    channel.port1.onmessage = function(){
+      /* jshint -W084 */
+      var fn;
+      while (fn = stack.get()) {
+        fn();
+      }
+    };
+    return function( cb ){
+      stack.put( cb );
+      channel.port2.postMessage( 0 );
+    };
+  }());
 }
 else {
   asyncProvider = setTimeout;

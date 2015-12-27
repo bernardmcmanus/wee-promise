@@ -1,4 +1,4 @@
-/*! wee-promise - 1.0.3 - Bernard McManus - c89a629 - 2015-12-21 */
+/*! wee-promise - 1.0.4 - Bernard McManus - 6ff0c68 - 2015-12-27 */
 
 (function(global,UNDEFINED){
 "use strict";
@@ -19,11 +19,11 @@ Stack.prototype.put = function( element ){
 Stack.prototype.get = function(){
   var that = this,
     element = that.q[that.i];
-    that.i++;
-    if (that.i >= that.len) {
-      that.q.length = that.i = that.len = 0;
-    }
-    return element;
+  that.i++;
+  if (that.i >= that.len) {
+    that.q.length = that.i = that.len = 0;
+  }
+  return element;
 };
 
 var asyncProvider;
@@ -32,11 +32,21 @@ if (global.setImmediate) {
   asyncProvider = setImmediate;
 }
 else if (global.MessageChannel) {
-  asyncProvider = function( cb ){
-    var channel = new MessageChannel();
-    channel.port1.onmessage = cb;
-    channel.port2.postMessage( 0 );
-  };
+  asyncProvider = (function(){
+    var stack = new Stack(),
+      channel = new MessageChannel();
+    channel.port1.onmessage = function(){
+      /* jshint -W084 */
+      var fn;
+      while (fn = stack.get()) {
+        fn();
+      }
+    };
+    return function( cb ){
+      stack.put( cb );
+      channel.port2.postMessage( 0 );
+    };
+  }());
 }
 else {
   asyncProvider = setTimeout;
@@ -76,51 +86,52 @@ function WeePromise( resolver ){
   }
 }
 
-WeePromise.prototype = {
-  constructor: WeePromise,
-  onresolved: function( value ){
-    return value;
-  },
-  onrejected: function( reason ){
-    throw reason;
-  },
-  _flush: function(){
-    var that = this,
-      state = that._state;
-    if (state) {
-      WeePromise.async(function(){
-        (function flush(){
-          var promise = that._stack.get();
-          if (promise) {
-            var fn = (state == RESOLVED ? promise.onresolved : promise.onrejected);
-            try {
-              $resolve( promise , fn( that._value ));
-            }
-            catch( err ){
-              $reject( promise , err );
-            }
-            flush();
+WeePromise.prototype.onresolved = function( value ){
+  return value;
+};
+
+WeePromise.prototype.onrejected = function( reason ){
+  throw reason;
+};
+
+WeePromise.prototype._flush = function(){
+  var that = this,
+    state = that._state;
+  if (state) {
+    WeePromise.async(function(){
+      (function flush(){
+        var promise = that._stack.get();
+        if (promise) {
+          var fn = (state == RESOLVED ? promise.onresolved : promise.onrejected);
+          try {
+            $resolve( promise , fn( that._value ));
           }
-        }());
-      });
-    }
-  },
-  then: function( onresolved , onrejected ){
-    var that = this,
-      promise = new WeePromise();
-    if (isFunction( onresolved )) {
-      promise.onresolved = onresolved;
-    }
-    if (isFunction( onrejected )) {
-      promise.onrejected = onrejected;
-    }
-    that._stack.put( promise );
-    that._flush();
-    return promise;
-  },
-  catch: function( onrejected ){
-    return this.then( UNDEFINED , onrejected );
+          catch( err ){
+            $reject( promise , err );
+          }
+          flush();
+        }
+      }());
+    });
   }
+};
+
+WeePromise.prototype.then = function( onresolved , onrejected ){
+  var that = this,
+    promise = new WeePromise();
+  if (isFunction( onresolved )) {
+    promise.onresolved = onresolved;
+  }
+  if (isFunction( onrejected )) {
+    promise.onrejected = onrejected;
+  }
+  that._stack.put( promise );
+  that._flush();
+  return promise;
+};
+
+WeePromise.prototype.catch = function( onrejected ){
+  return this.then( UNDEFINED , onrejected );
 };
 
 WeePromise.resolve = function( result ){
@@ -244,4 +255,4 @@ module.exports = WeePromise;
 } else {
 global.WeePromise = WeePromise;
 }
-}(this));
+}(typeof window=="object"?window:global));
