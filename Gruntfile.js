@@ -49,7 +49,7 @@ module.exports = function( grunt ) {
       options: {
         args: (function(){
           var args = [
-            ['global','this'],
+            ['global','typeof window=="object"?window:global'],
             ['UNDEFINED']
           ];
           var leadingWrapArgs = args.map(function( arg ){
