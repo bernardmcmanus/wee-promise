@@ -10,6 +10,9 @@ WeePromise
 [![david-dm](https://david-dm.org/elnarddogg/wee-promise.svg)](https://david-dm.org/elnarddogg/wee-promise)
 ![npm](https://img.shields.io/npm/v/npm.svg)
 ![bower](https://img.shields.io/bower/v/bootstrap.svg)
+<a href="http://bfmiv.com/jsperf-demo/?slug=wee-promise-perf-test/latest" target="_blank">
+    <img src="http://svc.bfmiv.com/jsperf/wee-promise-perf-test/latest" height="200" align="right">
+</a>
 
 ### Installation
 
