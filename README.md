@@ -1,5 +1,5 @@
-<a href="http://promises-aplus.github.com/promises-spec">
-    <img src="http://promises-aplus.github.com/promises-spec/assets/logo-small.png" align="right" alt="Promises/A+ logo" />
+<a href="https://promisesaplus.com/">
+    <img src="https://promisesaplus.com/assets/logo-small.png" alt="Promises/A+ logo" title="Promises/A+ 1.0 compliant" align="right" />
 </a>
 
 WeePromise
@@ -10,9 +10,9 @@ WeePromise
 [![david-dm](https://david-dm.org/elnarddogg/wee-promise.svg)](https://david-dm.org/elnarddogg/wee-promise)
 ![npm](https://img.shields.io/npm/v/npm.svg)
 ![bower](https://img.shields.io/bower/v/bootstrap.svg)
-<a href="http://bfmiv.com/jsperf-demo/?slug=wee-promise-perf-test/latest" target="_blank">
+<!--<a href="http://bfmiv.com/jsperf-demo/?slug=wee-promise-perf-test/latest" target="_blank">
     <img src="http://svc.bfmiv.com/jsperf/wee-promise-perf-test/latest" height="200" align="right">
-</a>
+</a>-->
 
 ### Installation
 
