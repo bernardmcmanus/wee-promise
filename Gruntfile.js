@@ -27,24 +27,6 @@ module.exports = function( grunt ) {
       compiled: [ 'compiled' ],
       dist: [ 'dist' ]
     },
-    update_json: {
-      options: {
-        src: 'package.json',
-        indent: 2
-      },
-      bower: {
-        dest: 'bower.json',
-        fields: [
-          'name',
-          'version',
-          'main',
-          'description',
-          'keywords',
-          'homepage',
-          'license'
-        ]
-      }
-    },
     wrap: {
       options: {
         args: (function(){
@@ -198,7 +180,6 @@ module.exports = function( grunt ) {
     'grunt-contrib-concat',
     'grunt-contrib-uglify',
     'grunt-contrib-watch',
-    'grunt-update-json',
     'grunt-strip-code',
     'grunt-contrib-connect',
     'grunt-mocha-phantomjs',
@@ -211,7 +192,6 @@ module.exports = function( grunt ) {
   grunt.registerTask( 'default' , [
     'build',
     'test',
-    'update_json',
     'uglify',
     'clean:dist',
     'copy',

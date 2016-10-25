@@ -1,10 +1,9 @@
 {
   "name": "wee-promise",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "An ultra light Promises / A+ implementation",
   "main": "dist/wee-promise.js",
   "scripts": {
-    "install": "bower install",
     "test": "grunt test",
     "build": "grunt"
   },
@@ -42,7 +41,7 @@
   "homepage": "https://github.com/elnarddogg/wee-promise",
   "devDependencies": {
     "bluebird": "^3.0.5",
-    "bower": "^1.7.0",
+    "chai": "^3.5.0",
     "colors": "^1.1.2",
     "connect-preprocess": "^1.0.0",
     "connect-query": "^0.2.0",
@@ -59,9 +58,10 @@
     "grunt-gitinfo": "^0.1.7",
     "grunt-mocha-phantomjs": "^2.0.1",
     "grunt-strip-code": "^0.1.2",
-    "grunt-update-json": "^0.2.1",
     "grunt-wrap": "^0.3.0",
     "intercept-stdout": "^0.1.2",
+    "lodash": "^4.16.4",
+    "mocha": "^3.1.2",
     "promises-aplus-tests": "^2.1.1",
     "urlrouter": "^0.5.4"
   }

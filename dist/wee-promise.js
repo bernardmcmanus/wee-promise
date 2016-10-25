@@ -1,4 +1,4 @@
-/*! wee-promise - 1.0.4 - Bernard McManus - 6ff0c68 - 2015-12-27 */
+/*! wee-promise - 1.0.5 - Bernard McManus - 12a4ed3 - 2016-10-25 */
 
 (function(global,UNDEFINED){
 "use strict";

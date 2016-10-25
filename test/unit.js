@@ -2,10 +2,17 @@
   'use strict';
   var Promise = WeePromise;
   describe( '#constructor' , function(){
-    it( 'should fail silently when an error is thrown' , function( done ){
+    it( 'should fail silently when an error is thrown' , function(){
+      var caught;
       return new Promise(function( resolve , reject ){
-        setTimeout( done );
+        setTimeout( resolve );
         throw new Error( 'error' );
+      })
+      .catch(function() {
+        caught = true;
+      })
+      .then(function() {
+        expect(caught).to.be.ok;
       });
     });
   });
@@ -30,13 +37,19 @@
       })
       .catch( done );
     });
-    it( 'should fail silently when an error is thrown' , function( done ){
-      new Promise(function( resolve , reject ){
-        resolve();
+    it( 'should fail silently when an error is thrown' , function(){
+      var caught;
+      return new Promise(function( resolve , reject ){
+        setTimeout(resolve);
       })
       .then(function(){
-        setTimeout( done );
         throw new Error( 'error' );
+      })
+      .catch(function() {
+        caught = true;
+      })
+      .then(function() {
+        expect(caught).to.be.ok;
       });
     });
     it( 'should pass returned args to the next then function' , function( done ){
@@ -496,12 +509,10 @@
         })
         .catch( done );
       });
-      it( 'should be executed if a promise is rejected (synchronous)' , function( done ){
+      it( 'should be executed if a promise is rejected (synchronous)' , function(){
         return all_catch( true ).then(function( reason ){
           expect( reason ).to.be.ok;
-          done();
-        })
-        .catch( done );
+        });
       });
       it( 'should receive arguments from the first promise that was rejected (asynchronous)' , function( done ){
         all_catch().then(_.spread(function( result , test ){
