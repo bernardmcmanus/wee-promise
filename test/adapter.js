@@ -1,19 +1,19 @@
-var WeePromise = require( '../compiled/wee-promise' );
+var WeePromise = require('../compiled/wee-promise');
 module.exports = {
-	resolved: function( value ){
-		return new WeePromise(function( resolve ){
-			resolve( value );
+	resolved: function(value) {
+		return new WeePromise(function(resolve) {
+			resolve(value);
 		});
 	},
-	rejected: function( reason ){
-		return new WeePromise(function( resolve , reject ){
-			reject( reason );
+	rejected: function(reason) {
+		return new WeePromise(function(resolve, reject) {
+			reject(reason);
 		});
 	},
-	deferred: function(){
+	deferred: function() {
 		var $resolve,
 			$reject,
-			promise = new WeePromise(function( resolve , reject ){
+			promise = new WeePromise(function(resolve, reject) {
 				$resolve = resolve;
 				$reject = reject;
 			});

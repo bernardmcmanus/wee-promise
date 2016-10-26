@@ -1,6 +1,6 @@
 {
   "name": "wee-promise",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "An ultra light Promises / A+ implementation",
   "main": "dist/wee-promise.js",
   "scripts": {
@@ -63,6 +63,8 @@
     "lodash": "^4.16.4",
     "mocha": "^3.1.2",
     "promises-aplus-tests": "^2.1.1",
+    "sinon": "^1.17.6",
+    "sinon-chai": "^2.8.0",
     "urlrouter": "^0.5.4"
   }
 }

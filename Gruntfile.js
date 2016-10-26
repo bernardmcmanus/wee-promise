@@ -1,49 +1,49 @@
-module.exports = function( grunt ) {
+module.exports = function(grunt) {
 	// Clean up HTTP errors encountered during tests
-	require( 'intercept-stdout' )(function( text ){
-		if (Buffer.isBuffer( text )) {
-			text = text.toString( 'utf-8' );
+	require('intercept-stdout')(function(text) {
+		if (Buffer.isBuffer(text)) {
+			text = text.toString('utf-8');
 		}
-		if ((/Error loading resource/i).test( text )) {
+		if ((/Error loading resource/i).test(text)) {
 			return '';
 		}
 	});
 
 	// don't strip debugging code for certain tasks
-	if (process.argv.indexOf( 'test' ) > 0 || process.argv.indexOf( 'debug' ) > 0) {
-		grunt.option( 'nostrip' , true );
+	if (process.argv.indexOf('test') > 0 || process.argv.indexOf('debug') > 0) {
+		grunt.option('nostrip', true);
 	}
 
 	// always print a stack trace if something goes wrong
-	grunt.option( 'stack' , true );
+	grunt.option('stack', true);
 
 	grunt.initConfig({
-		pkg: grunt.file.readJSON( 'package.json' ),
+		pkg: grunt.file.readJSON('package.json'),
 		gitinfo: {},
 		jshint: {
-			all: [ '<%= pkg.config.src %>' ]
+			all: ['<%= pkg.config.src %>']
 		},
 		clean: {
-			compiled: [ 'compiled' ],
-			dist: [ 'dist' ]
+			compiled: ['compiled'],
+			dist: ['dist']
 		},
 		wrap: {
 			options: {
-				args: (function(){
+				args: (function() {
 					var args = [
 						['global','typeof window=="object"?window:global'],
 						['UNDEFINED']
 					];
-					var leadingWrapArgs = args.map(function( arg ){
-						return Array.isArray( arg ) ? arg.shift() : arg;
+					var leadingWrapArgs = args.map(function(arg) {
+						return Array.isArray(arg) ? arg.shift() : arg;
 					})
-					.filter(function( arg ){
+					.filter(function(arg) {
 						return !!arg;
 					});
-					var trailingWrapArgs = args.map(function( arg ){
-						return Array.isArray( arg ) ? arg.pop() : arg;
+					var trailingWrapArgs = args.map(function(arg) {
+						return Array.isArray(arg) ? arg.pop() : arg;
 					})
-					.filter(function( arg ){
+					.filter(function(arg) {
 						return !!arg;
 					});
 					return {
@@ -52,7 +52,7 @@ module.exports = function( grunt ) {
 					};
 				}()),
 				wrapper: [
-					'(function(<%= wrap.options.args.leading %>){\n"use strict";\n',
+					'(function(<%= wrap.options.args.leading %>) {\n"use strict";\n',
 					[
 							'if (typeof exports == "object") {',
 								'module.exports = WeePromise;',
@@ -116,7 +116,7 @@ module.exports = function( grunt ) {
 			options: { interrupt: true },
 			all: {
 				files: '<%= pkg.config.src %>',
-				tasks: [ 'build' , '_test' ]
+				tasks: ['build', '_test']
 			}
 		},
 		connect: {
@@ -126,29 +126,29 @@ module.exports = function( grunt ) {
 					base: '<%= pkg.config.connect.base %>',
 					hostname: '<%= pkg.config.connect.hostname %>',
 					interrupt: true,
-					middleware: function( connect , options , middlewares ){
-						var Preprocessor = require( 'connect-preprocess' );
-						var Router = require( 'urlrouter' );
-						var Query = require( 'connect-query' );
-						var parseUrl = require( 'url' ).parse;
-						grunt.config.set( 'query' , '{}' );
+					middleware: function(connect, options, middlewares) {
+						var Preprocessor = require('connect-preprocess');
+						var Router = require('urlrouter');
+						var Query = require('connect-query');
+						var parseUrl = require('url').parse;
+						grunt.config.set('query', '{}');
 						return [
 							Query(),
-							Router(function( app ) {
-								app.get( '/test/(unit|functional)\/?$' , function( req , res , next ){
-									var type = parseUrl( req.url ).pathname.match( /\/test\/([^\/]+)/i )[1];
+							Router(function(app) {
+								app.get('/test/(unit|functional)\/?$', function(req, res, next) {
+									var type = parseUrl(req.url).pathname.match(/\/test\/([^\/]+)/i)[1];
 									req.url = '/test/index.html';
-									grunt.config.set( 'test_src' , '/test/' + type + '.js' );
-									grunt.config.set( 'query' , JSON.stringify( req.query ));
+									grunt.config.set('test_src', '/test/' + type + '.js');
+									grunt.config.set('query', JSON.stringify(req.query));
 									next();
 								});
 							}),
 							Preprocessor({
-								accept: [ 'html' ],
+								accept: ['html'],
 								engine: grunt.config.process
 							})
 						]
-						.concat( middlewares );
+						.concat(middlewares);
 					}
 				}
 			}
@@ -172,7 +172,7 @@ module.exports = function( grunt ) {
 		}
 	});
 
-	grunt.loadTasks( 'tasks' );
+	grunt.loadTasks('tasks');
 
 	[
 		'grunt-contrib-jshint',
@@ -187,9 +187,9 @@ module.exports = function( grunt ) {
 		'grunt-gitinfo',
 		'grunt-contrib-copy'
 	]
-	.forEach( grunt.loadNpmTasks );
+	.forEach(grunt.loadNpmTasks);
 
-	grunt.registerTask( 'default' , [
+	grunt.registerTask('default', [
 		'build',
 		'test',
 		'uglify',
@@ -199,7 +199,7 @@ module.exports = function( grunt ) {
 		'release-describe'
 	]);
 
-	grunt.registerTask( 'build' , [
+	grunt.registerTask('build', [
 		'clean:compiled',
 		'jshint',
 		'gitinfo',
@@ -209,29 +209,29 @@ module.exports = function( grunt ) {
 		'strip'
 	]);
 
-	grunt.registerTask( 'test' , [
+	grunt.registerTask('test', [
 		'connect',
 		'_test'
 	]);
 
-	grunt.registerTask( 'debug' , [
+	grunt.registerTask('debug', [
 		'test',
 		'watch'
 	]);
 
-	grunt.registerTask( '_test' , function(){
+	grunt.registerTask('_test', function() {
 		try {
-			grunt.task.requires( 'build' );
+			grunt.task.requires('build');
 		}
-		catch( err ){
-			grunt.task.run( 'build' );
+		catch(err) {
+			grunt.task.run('build');
 		}
-		grunt.task.run([ 'mocha_phantomjs' , 'a-plus' ]);
+		grunt.task.run(['mocha_phantomjs', 'a-plus']);
 	});
 
-	grunt.registerTask( 'strip' , function(){
-		if (!grunt.option( 'nostrip' )) {
-			grunt.task.run( 'strip_code' );
+	grunt.registerTask('strip', function() {
+		if (!grunt.option('nostrip')) {
+			grunt.task.run('strip_code');
 		}
 	});
 };
