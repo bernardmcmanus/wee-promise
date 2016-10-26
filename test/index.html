@@ -1,24 +1,24 @@
 <!DOCTYPE HTML>
 <html>
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
-    <title>Mocha</title>
-    <link rel="stylesheet" type="text/css" href="/node_modules/mocha/mocha.css" />
-    <script src="/node_modules/mocha/mocha.js"></script>
-    <script src="/node_modules/chai/chai.js"></script>
-    <script src="/node_modules/lodash/lodash.js"></script>
-    <script src="/compiled/<%= pkg.name %>.js"></script>
-  </head>
-  <body>
-    <div id="mocha"></div>
-  </body>
-  <script>
-    window.query = JSON.parse( '<%= query %>' );
-    window.expect = chai.expect;
-    mocha.setup( 'bdd' );
-    mocha.reporter( 'html' );
-  </script>
-  <script src="<%= test_src %>"></script>
-  <script>mocha.run();</script>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=Edge">
+		<title>Mocha</title>
+		<link rel="stylesheet" type="text/css" href="/node_modules/mocha/mocha.css" />
+		<script src="/node_modules/mocha/mocha.js"></script>
+		<script src="/node_modules/chai/chai.js"></script>
+		<script src="/node_modules/lodash/lodash.js"></script>
+		<script src="/compiled/<%= pkg.name %>.js"></script>
+	</head>
+	<body>
+		<div id="mocha"></div>
+	</body>
+	<script>
+		window.query = JSON.parse( '<%= query %>' );
+		window.expect = chai.expect;
+		mocha.setup( 'bdd' );
+		mocha.reporter( 'html' );
+	</script>
+	<script src="<%= test_src %>"></script>
+	<script>mocha.run();</script>
 </html>

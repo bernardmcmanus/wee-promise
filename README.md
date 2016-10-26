@@ -15,6 +15,7 @@ WeePromise
     npm i wee-promise --save
 
 ### Usage
+
 WeePromise supports both deferred and resolver patterns:
 
 ```javascript
