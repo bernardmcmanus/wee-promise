@@ -6,8 +6,8 @@ WeePromise
 ===========
 > An ultra light (<1k minified / gzipped) Promises / A+ implementation.
 
-[![travis-ci](https://travis-ci.org/elnarddogg/wee-promise.svg)](https://travis-ci.org/elnarddogg/wee-promise)
-[![david-dm](https://david-dm.org/elnarddogg/wee-promise.svg)](https://david-dm.org/elnarddogg/wee-promise)
+[![travis-ci](https://travis-ci.org/bernardmcmanus/wee-promise.svg)](https://travis-ci.org/bernardmcmanus/wee-promise)
+[![david-dm](https://david-dm.org/bernardmcmanus/wee-promise.svg)](https://david-dm.org/bernardmcmanus/wee-promise)
 
 ### Installation
 
