@@ -1,6 +1,15 @@
+var fs = require('fs');
+var cp = require('child_process');
+var Intercept = require('intercept-stdout');
+var transpiler = require( 'es6-module-transpiler' );
+
+var Container = transpiler.Container;
+var FileResolver = transpiler.FileResolver;
+var BundleFormatter = transpiler.formatters.bundle;
+
 module.exports = function(grunt) {
 	// Clean up HTTP errors encountered during tests
-	require('intercept-stdout')(function(text) {
+	Intercept(function(text) {
 		if (Buffer.isBuffer(text)) {
 			text = text.toString('utf-8');
 		}
@@ -9,11 +18,6 @@ module.exports = function(grunt) {
 		}
 	});
 
-	// don't strip debugging code for certain tasks
-	if (process.argv.indexOf('test') > 0 || process.argv.indexOf('debug') > 0) {
-		grunt.option('nostrip', true);
-	}
-
 	// always print a stack trace if something goes wrong
 	grunt.option('stack', true);
 
@@ -21,78 +25,18 @@ module.exports = function(grunt) {
 		pkg: grunt.file.readJSON('package.json'),
 		gitinfo: {},
 		jshint: {
-			all: ['<%= pkg.config.src %>']
+			all: ['src/*'],
+			options: {
+				esnext: true
+			}
 		},
 		clean: {
-			compiled: ['compiled'],
+			compiled: ['tmp', 'compiled'],
 			dist: ['dist']
 		},
-		wrap: {
-			options: {
-				args: (function() {
-					var args = [
-						['global','typeof window=="object"?window:global'],
-						['UNDEFINED']
-					];
-					var leadingWrapArgs = args.map(function(arg) {
-						return Array.isArray(arg) ? arg.shift() : arg;
-					})
-					.filter(function(arg) {
-						return !!arg;
-					});
-					var trailingWrapArgs = args.map(function(arg) {
-						return Array.isArray(arg) ? arg.pop() : arg;
-					})
-					.filter(function(arg) {
-						return !!arg;
-					});
-					return {
-						leading: leadingWrapArgs,
-						trailing: trailingWrapArgs
-					};
-				}()),
-				wrapper: [
-					'(function(<%= wrap.options.args.leading %>) {\n"use strict";\n',
-					[
-							'if (typeof exports == "object") {',
-								'module.exports = WeePromise;',
-							'} else {',
-								'global.WeePromise = WeePromise;',
-							'}',
-						'}(<%= wrap.options.args.trailing %>));'
-					]
-					.join('\n')
-				]
-			},
-			compiled: {
-				files: {
-					'compiled/<%= pkg.name %>.js': 'compiled/<%= pkg.name %>.js'
-				}
-			}
-		},
-		concat: {
-			tmp: {
-				files: {
-					'compiled/<%= pkg.name %>.js': '<%= pkg.config.src %>'
-				}
-			},
-			compiled: {
-				options: { banner: '<%= pkg.config.banner %>\n' },
-				files: {
-					'compiled/<%= pkg.name %>.js': 'compiled/<%= pkg.name %>.js'
-				}
-			}
-		},
-		strip_code: {
-			options: {
-				start_comment: '{debug}',
-				end_comment: '{/debug}'
-			},
-			compiled: {
-				files: {
-					'compiled/<%= pkg.name %>.js': 'compiled/<%= pkg.name %>.js'
-				}
-			}
+		modules: {
+			src: '../tmp/export',
+			dest: './compiled/<%= pkg.name %>.js',
 		},
 		uglify: {
 			compiled: {
@@ -106,7 +50,7 @@ module.exports = function(grunt) {
 			dist: {
 				files: [{
 					expand: true,
-					src: '*',
+					src: '*.js',
 					dest: 'dist/',
 					cwd: 'compiled/'
 				}]
@@ -115,7 +59,7 @@ module.exports = function(grunt) {
 		watch: {
 			options: { interrupt: true },
 			all: {
-				files: '<%= pkg.config.src %>',
+				files: 'src/*',
 				tasks: ['build', '_test']
 			}
 		},
@@ -177,13 +121,10 @@ module.exports = function(grunt) {
 	[
 		'grunt-contrib-jshint',
 		'grunt-contrib-clean',
-		'grunt-contrib-concat',
 		'grunt-contrib-uglify',
 		'grunt-contrib-watch',
-		'grunt-strip-code',
 		'grunt-contrib-connect',
 		'grunt-mocha-phantomjs',
-		'grunt-wrap',
 		'grunt-gitinfo',
 		'grunt-contrib-copy'
 	]
@@ -191,7 +132,6 @@ module.exports = function(grunt) {
 
 	grunt.registerTask('default', [
 		'build',
-		'test',
 		'uglify',
 		'clean:dist',
 		'copy',
@@ -203,10 +143,8 @@ module.exports = function(grunt) {
 		'clean:compiled',
 		'jshint',
 		'gitinfo',
-		'concat:tmp',
-		'wrap',
-		'concat:compiled',
-		'strip'
+		'babel',
+		'modules'
 	]);
 
 	grunt.registerTask('test', [
@@ -219,6 +157,30 @@ module.exports = function(grunt) {
 		'watch'
 	]);
 
+	grunt.registerTask('babel', function() {
+		var buffer = cp.execSync('./node_modules/.bin/babel src --out-dir tmp --source-maps inline');
+		process.stdout.write(buffer.toString('utf-8'));
+	});
+
+	grunt.registerTask('modules', function() {
+		var src = grunt.config.get('modules.src');
+		var dest = grunt.config.get('modules.dest');
+		var container = new Container({
+			resolvers: [new FileResolver(['src/'])],
+			formatter: new BundleFormatter()
+		});
+
+		container.getModule(src);
+		container.write(dest);
+
+		var transpiled = fs
+			.readFileSync(dest, 'utf-8')
+			.replace(/(^.*sourceMappingURL.*\n?$)/mi, '')
+			.replace(/([\s\t]+)("use strict";)/, '$1$2$1var global = this;');
+
+		fs.writeFileSync(dest, transpiled);
+	});
+
 	grunt.registerTask('_test', function() {
 		try {
 			grunt.task.requires('build');
@@ -227,11 +189,5 @@ module.exports = function(grunt) {
 			grunt.task.run('build');
 		}
 		grunt.task.run(['mocha_phantomjs', 'a-plus']);
-	});
-
-	grunt.registerTask('strip', function() {
-		if (!grunt.option('nostrip')) {
-			grunt.task.run('strip_code');
-		}
 	});
 };

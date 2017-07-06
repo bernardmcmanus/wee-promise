@@ -1,258 +1,249 @@
-/*! wee-promise - 1.0.6 - Bernard McManus - 4a1cdaa - 2016-10-25 */
+(function() {
+    "use strict";
+    var global = this;
+    function $$stack$$Stack() {
+        var queue = [];
+        var index = 0;
+        var length = 0;
 
-(function(global,UNDEFINED) {
-"use strict";
+        function put(element) {
+            queue[length] = element;
+            length++;
+        }
 
-function Stack() {
-	var that = this;
-	that.q = [];
-	that.i = 0;
-	that.len = 0;
-}
+        function get() {
+            var element = queue[index];
+            index++;
+            if (index >= length) {
+                queue.length = index = length = 0;
+            }
+            return element;
+        }
 
-Stack.prototype.put = function(element) {
-	var that = this;
-	that.q[that.len] = element;
-	that.len++;
-};
+        return { put: put, get: get };
+    }
+    var $$stack$$default = $$stack$$Stack;
 
-Stack.prototype.get = function() {
-	var that = this,
-		element = that.q[that.i];
-	that.i++;
-	if (that.i >= that.len) {
-		that.q.length = that.i = that.len = 0;
-	}
-	return element;
-};
+    var $$async$$asyncProvider = void 0;
 
-var asyncProvider;
+    if (global.setImmediate) {
+        $$async$$asyncProvider = setImmediate;
+    } else if (global.MessageChannel) {
+        var $$async$$stack = $$stack$$default();
+        var $$async$$channel = new MessageChannel();
+        $$async$$channel.port1.onmessage = function () {
+            /* jshint -W084 */
+            var fn = void 0;
+            while (fn = $$async$$stack.get()) {
+                fn();
+            }
+        };
+        $$async$$asyncProvider = function (cb) {
+            $$async$$stack.put(cb);
+            $$async$$channel.port2.postMessage(0);
+        };
+    } else {
+        $$async$$asyncProvider = setTimeout;
+    }
 
-if (global.setImmediate) {
-	asyncProvider = setImmediate;
-} else if (global.MessageChannel) {
-	asyncProvider = (function() {
-		var stack = new Stack(),
-			channel = new MessageChannel();
-		channel.port1.onmessage = function() {
-			/* jshint -W084 */
-			var fn;
-			while (fn = stack.get()) {
-				fn();
-			}
-		};
-		return function(cb) {
-			stack.put(cb);
-			channel.port2.postMessage(0);
-		};
-	}());
-} else {
-	asyncProvider = setTimeout;
-}
+    var $$async$$default = $$async$$asyncProvider;
 
-WeePromise.async = function(cb) {
-	asyncProvider(cb);
-};
+    var $$main$$PENDING = 0;
+    var $$main$$RESOLVED = 1;
+    var $$main$$REJECTED = 2;
 
+    function $$main$$WeePromise(resolver) {
+        var _this = this;
 
-var PENDING = 0;
-var RESOLVED = 1;
-var REJECTED = 2;
+        var onceWrapper = $$main$$once(function (action, value) {
+            action(_this, value);
+        });
 
-function WeePromise(resolver) {
-	var that = this;
-	var one = getSingleCallable(function(action, value) {
-		action(that, value);
-	});
+        this._state = $$main$$PENDING;
+        this._stack = $$stack$$default();
+        this.resolve = function (value) {
+            onceWrapper($$main$$$resolve, value);
+            return _this;
+        };
+        this.reject = function (reason) {
+            onceWrapper($$main$$$reject, reason);
+            return _this;
+        };
 
-	that._state = PENDING;
-	that._stack = new Stack();
-	that.resolve = function(value) {
-		one($resolve, value);
-		return that;
-	};
-	that.reject = function(reason) {
-		one($reject, reason);
-		return that;
-	};
+        if (resolver) {
+            try {
+                resolver(this.resolve, this.reject);
+            } catch (err) {
+                this.reject(err);
+            }
+        }
+    }
 
-	if (resolver) {
-		try {
-			resolver(that.resolve, that.reject);
-		}
-		catch(err) {
-			that.reject(err);
-		}
-	}
-}
+    var $$main$$default = $$main$$WeePromise;
 
-WeePromise.prototype.onresolved = function(value) {
-	return value;
-};
+    $$main$$WeePromise.async = function (cb) {
+        $$async$$default(cb);
+    };
 
-WeePromise.prototype.onrejected = function(reason) {
-	throw reason;
-};
+    $$main$$WeePromise.prototype.onresolved = function (value) {
+        return value;
+    };
 
-WeePromise.prototype._flush = function() {
-	var that = this;
-	var state = that._state;
+    $$main$$WeePromise.prototype.onrejected = function (reason) {
+        throw reason;
+    };
 
-	if (state) {
-		WeePromise.async(function() {
-			(function flush() {
-				var promise = that._stack.get();
-				if (promise) {
-					var fn = (state === RESOLVED ? promise.onresolved : promise.onrejected);
-					try {
-						$resolve(promise, fn(that._value));
-					}
-					catch(err) {
-						$reject(promise, err);
-					}
-					flush();
-				}
-			}());
-		});
-	}
-};
+    $$main$$WeePromise.prototype._flush = function () {
+        var _this2 = this;
 
-WeePromise.prototype.then = function(onresolved, onrejected) {
-	var that = this;
-	var promise = new WeePromise();
+        var state = this._state;
+        var stack = this._stack;
+        if (state) {
+            var flush = function () {
+                var promise = stack.get();
+                if (promise) {
+                    var fn = state === $$main$$RESOLVED ? promise.onresolved : promise.onrejected;
+                    try {
+                        $$main$$$resolve(promise, fn(_this2._value));
+                    } catch (err) {
+                        $$main$$$reject(promise, err);
+                    }
+                    flush();
+                }
+            };
+            $$main$$WeePromise.async(flush);
+        }
+    };
 
-	if (isFunction(onresolved)) {
-		promise.onresolved = onresolved;
-	}
-	if (isFunction(onrejected)) {
-		promise.onrejected = onrejected;
-	}
+    $$main$$WeePromise.prototype.then = function (onresolved, onrejected) {
+        var promise = new $$main$$WeePromise();
+        if ($$main$$isFunction(onresolved)) {
+            promise.onresolved = onresolved;
+        }
+        if ($$main$$isFunction(onrejected)) {
+            promise.onrejected = onrejected;
+        }
+        this._stack.put(promise);
+        this._flush();
+        return promise;
+    };
 
-	that._stack.put(promise);
-	that._flush();
-	return promise;
-};
+    $$main$$WeePromise.prototype.catch = function (onrejected) {
+        return this.then(undefined, onrejected);
+    };
 
-WeePromise.prototype.catch = function(onrejected) {
-	return this.then(UNDEFINED, onrejected);
-};
+    $$main$$WeePromise.resolve = function (result) {
+        return new $$main$$WeePromise().resolve(result);
+    };
 
-WeePromise.resolve = function(result) {
-	return new WeePromise().resolve(result);
-};
+    $$main$$WeePromise.reject = function (reason) {
+        return new $$main$$WeePromise().reject(reason);
+    };
 
-WeePromise.reject = function(reason) {
-	return new WeePromise().reject(reason);
-};
+    $$main$$WeePromise.all = function (collection) {
+        var promise = new $$main$$WeePromise();
+        var result = [];
+        var need = collection.length;
+        var got = 0;
 
-WeePromise.all = function(collection) {
-	var promise = new WeePromise();
-	var result = [];
-	var got = 0;
-	var need = collection.length;
+        collection.forEach(function (child, i) {
+            $$main$$unwrap(child, function (state, value) {
+                got++;
+                result[i] = value;
+                if (state === $$main$$REJECTED) {
+                    promise.reject(value);
+                } else if (got === need) {
+                    promise.resolve(result);
+                }
+            });
+        });
 
-	collection.forEach(function(child, i) {
-		unwrap(child, function(state, value) {
-			got++;
-			result[i] = value;
-			if (state === REJECTED) {
-				promise.reject(value);
-			} else if (got === need) {
-				promise.resolve(result);
-			}
-		});
-	});
+        return promise;
+    };
 
-	return promise;
-};
+    $$main$$WeePromise.race = function (collection) {
+        var promise = new $$main$$WeePromise();
+        collection.forEach(function (child) {
+            $$main$$unwrap(child, function (state, value) {
+                $$main$$setState(promise, state, value);
+            });
+        });
+        return promise;
+    };
 
-WeePromise.race = function(collection) {
-	var promise = new WeePromise();
-	collection.forEach(function(child) {
-		unwrap(child, function(state, value) {
-			setState(promise, state, value);
-		});
-	});
-	return promise;
-};
+    function $$main$$$resolve(context, value) {
+        if (value === context) {
+            $$main$$$reject(context, new TypeError('A promise cannot be resolved with itself.'));
+        } else {
+            $$main$$unwrap(value, function (state, value) {
+                $$main$$setState(context, state, value);
+            });
+        }
+    }
 
-function $resolve(context, value) {
-	if (value === context) {
-		$reject(context, new TypeError('A promise cannot be resolved with itself.'));
-	} else {
-		unwrap(value, function(state, value) {
-			setState(context, state, value);
-		});
-	}
-}
+    function $$main$$$reject(context, reason) {
+        $$main$$setState(context, $$main$$REJECTED, reason);
+    }
 
-function $reject(context, reason) {
-	setState(context, REJECTED, reason);
-}
+    function $$main$$setState(context, state, value) {
+        if (context._state != state) {
+            context._value = value;
+            context._state = state;
+            context._flush();
+        }
+    }
 
-function setState(context, state, value) {
-	if (context._state != state) {
-		context._value = value;
-		context._state = state;
-		context._flush();
-	}
-}
+    function $$main$$unwrap(value, cb) {
+        if (value instanceof $$main$$WeePromise && value._state) {
+            // non-pending WeePromise instances
+            cb(value._state, value._value);
+        } else if ($$main$$isObject(value) || $$main$$isFunction(value)) {
+            // objects and functions
+            var onceWrapper = $$main$$once(function (fn, args) {
+                fn.apply(undefined, args);
+            });
+            try {
+                var then = value.then;
+                if ($$main$$isFunction(then)) {
+                    then.call(value, function (_value) {
+                        onceWrapper($$main$$unwrap, [_value, cb]);
+                    }, function (_reason) {
+                        onceWrapper(cb, [$$main$$REJECTED, _reason]);
+                    });
+                } else {
+                    onceWrapper(cb, [$$main$$RESOLVED, value]);
+                }
+            } catch (err) {
+                onceWrapper(cb, [$$main$$REJECTED, err]);
+            }
+        } else {
+            // all other values
+            cb($$main$$RESOLVED, value);
+        }
+    }
 
-function unwrap(value, cb) {
-	if (value instanceof WeePromise && value._state) {
-		// non-pending WeePromise instances
-		cb(value._state, value._value);
-	} else if (isObject(value) || isFunction(value)) {
-		// objects and functions
-		var then;
-		var one = getSingleCallable(function(fn, args) {
-			fn.apply(UNDEFINED, args);
-		});
-		try {
-			then = value.then;
-			if (isFunction(then)) {
-				then.call(value,
-					function(_value) {
-						one(unwrap, [_value, cb]);
-					},
-					function(_reason) {
-						one(cb, [REJECTED, _reason]);
-					}
-				);
-			} else {
-				one(cb, [RESOLVED, value]);
-			}
-		}
-		catch(err) {
-			one(cb, [REJECTED, err]);
-		}
-	} else {
-		// all other values
-		cb(RESOLVED, value);
-	}
-}
+    function $$main$$once(cb) {
+        var called = void 0;
+        return function () {
+            if (!called) {
+                cb.apply(undefined, arguments);
+                called = true;
+            }
+        };
+    }
 
-function getSingleCallable(cb) {
-	var called;
-	return function() {
-		if (!called) {
-			cb.apply(UNDEFINED, arguments);
-			called = true;
-		}
-	};
-}
+    function $$main$$isObject(subject) {
+        return subject && typeof subject === 'object';
+    }
 
-function isObject(subject) {
-	return subject && typeof subject === 'object';
-}
+    function $$main$$isFunction(subject) {
+        return typeof subject === 'function';
+    }
 
-function isFunction(subject) {
-	return typeof subject === 'function';
-}
+    if (typeof exports == 'object') {
+      module.exports = $$main$$default;
+    } else {
+      global.WeePromise = $$main$$default;
+    }
+}).call(this);
 
-if (typeof exports == "object") {
-module.exports = WeePromise;
-} else {
-global.WeePromise = WeePromise;
-}
-}(typeof window=="object"?window:global));
