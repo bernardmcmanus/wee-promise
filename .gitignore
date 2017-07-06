@@ -1,5 +1,6 @@
 node_modules
 compiled
+tmp
 .idea
 npm-debug.log
 
